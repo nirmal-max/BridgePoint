@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -103,7 +102,7 @@ export default function CooperativeDashboard() {
                   <p className="mt-2 text-slate-600 max-w-2xl">Manage your workforce, meet community demand, and create better opportunities.</p>
                 </div>
                 <div className="flex gap-3 items-center">
-                  <div className="hidden md:block rounded-3xl bg-white/80 border border-slate-200 px-5 py-4 text-blue-700 italic">"Organised workers. Stronger communities."</div>
+                  <div className="hidden md:block rounded-3xl bg-white/80 border border-slate-200 px-5 py-4 text-blue-700 italic">&quot;Organised workers. Stronger communities.&quot;</div>
                   <button onClick={() => setMemberModal(true)} className="px-5 py-3 rounded-2xl bg-blue-600 text-white font-medium">+ Add New Member</button>
                 </div>
               </div>

@@ -47,7 +47,6 @@ export default function PostJobPage() {
   }
 
   const budget = parseFloat(form.budget) || 0;
-  const employerTotal = budget + budget * 0.03;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
