@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" role="img" aria-label="Chennai temple landmark">
+ <defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c8e5fa"/><stop offset="1" stop-color="#eef7ff"/></linearGradient></defs>
+ <rect width="420" height="420" rx="24" fill="url(#s)"/><circle cx="318" cy="82" r="48" fill="#ffe2a5" opacity=".7"/><path d="M0 320c75-34 144-20 220-44 78-25 125-4 200-28v172H0z" fill="#8fc4b5"/><path d="M105 350V180h210v170z" fill="#d8a86b"/><path d="M78 185l132-142 132 142z" fill="#eeaf55"/><path d="M124 169l86-99 87 99z" fill="#f5c86c"/><path d="M159 151l51-62 52 62z" fill="#f8d782"/><path d="M194 128h33v42h-33zM135 213h32v44h-32zM194 213h32v44h-32zM253 213h32v44h-32z" fill="#8b5a3c"/><path d="M170 350v-76h82v76" fill="#f2c170"/><path d="M205 274h14v76h-14z" fill="#8b5a3c"/><path d="M74 350h272" stroke="#fff" stroke-width="12" opacity=".7"/><path d="M78 187h264" stroke="#9b653b" stroke-width="7"/>
+</svg>

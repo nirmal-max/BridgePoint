@@ -1,0 +1,27 @@
+# Bridge Point backend deployment for Render.
+# Deploy the Next.js frontend separately on Vercel.
+
+services:
+  - type: web
+    name: bridgepoint-api
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ADMIN_EMAILS
+        value: bridgepoint.team@gmail.com
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: PLATFORM_UPI_ID
+        value: nirmal.2007000-2@okhdfcbank
+      - key: PLATFORM_UPI_NAME
+        value: ""
