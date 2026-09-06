@@ -18,6 +18,7 @@ export default function Header() {
   const currentUser = mounted ? user : null;
 
   if (
+    pathname === "/" ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/worker") ||
