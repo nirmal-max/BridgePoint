@@ -16,6 +16,7 @@ from app.database import Base
 class UserRole(str, enum.Enum):
     EMPLOYER = "employer"
     LABOR = "labor"
+    COOPERATIVE = "cooperative"
 
 
 class LaborCategory(str, enum.Enum):

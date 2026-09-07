@@ -17,7 +17,7 @@ export default function CustomerFeaturePage({ section }: { section: Section }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(section === "find-services");
   const [error, setError] = useState("");
-  useEffect(() => { if (!authLoading && !user) router.replace(`/signup?role=customer&next=${encodeURIComponent(`/${section}`)}`); else if (!authLoading && user && (user.is_admin || user.role === "labor" || user.labor_category)) router.replace(user.is_admin ? "/admin" : "/worker"); }, [authLoading, router, section, user]);
+  useEffect(() => { if (!authLoading && !user) router.replace(`/signup?role=customer&next=${encodeURIComponent(`/${section}`)}`); else if (!authLoading && user && (user.is_admin || user.roles?.includes("cooperative") || user.role === "labor" || user.labor_category)) router.replace(user.is_admin || user.roles?.includes("cooperative") ? "/admin" : "/worker"); }, [authLoading, router, section, user]);
   useEffect(() => { if (section !== "find-services") return; let active = true; api.listJobs().then((result) => { if (active) setJobs(result.jobs); }).catch((err: unknown) => { if (active) setError(err instanceof Error ? err.message : "Unable to load services."); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [section]);
   if (authLoading || !user) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking access...</div>;
   const title = section === "find-services" ? "Find Services" : section === "booking" ? "Bookings & Tracking" : section[0].toUpperCase() + section.slice(1);

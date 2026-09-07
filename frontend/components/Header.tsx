@@ -12,7 +12,7 @@ export default function Header() {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const currentUser = mounted ? user : null;
-  const dashboardHref = currentUser?.is_admin ? "/admin" : currentUser?.role === "labor" || currentUser?.labor_category ? "/worker" : "/dashboard";
+  const dashboardHref = currentUser?.is_admin || currentUser?.roles?.includes("cooperative") ? "/admin" : currentUser?.role === "labor" || currentUser?.labor_category ? "/worker" : "/dashboard";
 
   if (
     pathname === "/" ||
@@ -48,7 +48,7 @@ export default function Header() {
               <Link href={dashboardHref} className="hover:text-[var(--color-bp-black)] transition-colors">
                 Dashboard
               </Link>
-              {currentUser.is_admin && (
+              {(currentUser.is_admin || currentUser.roles?.includes("cooperative")) && (
                 <Link href="/admin" className="hover:text-purple-700 transition-colors text-purple-600">
                   Admin
                 </Link>
@@ -108,7 +108,7 @@ export default function Header() {
             {currentUser ? (
               <>
                 <Link href={dashboardHref} onClick={() => setMenuOpen(false)}>Dashboard</Link>
-                {currentUser.is_admin && (
+                {(currentUser.is_admin || currentUser.roles?.includes("cooperative")) && (
                   <Link href="/admin" onClick={() => setMenuOpen(false)} className="text-purple-600">Admin Panel</Link>
                 )}
                 <button onClick={() => { logout(); setMenuOpen(false); }} className="text-left text-[var(--color-bp-red)]">

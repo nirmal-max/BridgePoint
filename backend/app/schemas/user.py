@@ -15,7 +15,7 @@ class UserRegister(BaseModel):
     phone: str = Field(..., min_length=10, max_length=15, pattern=r"^\+?[0-9]{10,15}$")
     password: str = Field(..., min_length=8)
     full_name: str = Field(..., min_length=2, max_length=255)
-    role: str = Field(default="both", pattern=r"^(employer|labor|both)$")  # Deprecated: unified mode
+    role: str = Field(default="both", pattern=r"^(employer|labor|cooperative|both)$")
 
     # Labor-specific (required if role == labor)
     labor_category: Optional[str] = None

@@ -10,14 +10,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.job import Job
 from app.models.user import User
-from app.utils.deps import get_current_user
+from app.utils.deps import require_cooperative
 
 router = APIRouter(prefix="/api/cooperative", tags=["Cooperative"])
 
 
-def _admin(user: User = Depends(get_current_user)) -> User:
-    if not user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cooperative access required")
+def _admin(user: User = Depends(require_cooperative)) -> User:
     return user
 
 

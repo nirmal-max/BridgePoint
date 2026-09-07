@@ -23,10 +23,10 @@ export default function WorkerDashboard() {
   const [mobileNav, setMobileNav] = useState(false);
   const [accepting, setAccepting] = useState<number | null>(null);
 
-  useEffect(() => { if (!user) router.replace("/signin?role=worker&next=%2Fworker"); else if (user.is_admin || (user.role !== "labor" && !user.labor_category)) router.replace(user.is_admin ? "/admin" : "/dashboard"); }, [router, user]);
+  useEffect(() => { if (!user) router.replace("/signin?role=worker&next=%2Fworker"); else if (user.is_admin || user.roles?.includes("cooperative") || (user.role !== "labor" && !user.labor_category)) router.replace(user.is_admin || user.roles?.includes("cooperative") ? "/admin" : "/dashboard"); }, [router, user]);
   const loadJobs = async () => { setLoading(true); setError(""); try { const result = await api.listJobs(); setJobs(result.jobs.filter((job) => job.status === "posted")); } catch (err: unknown) { setError(err instanceof Error ? err.message : "Unable to load available jobs."); } finally { setLoading(false); } };
   useEffect(() => { if (user) loadJobs(); }, [user]);
-  if (!user || user.is_admin || (user.role !== "labor" && !user.labor_category)) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking worker access...</div>;
+  if (!user || user.is_admin || user.roles?.includes("cooperative") || (user.role !== "labor" && !user.labor_category)) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking worker access...</div>;
   const visibleJobs = jobs.filter((job) => !search || `${job.title} ${job.work_description} ${job.city}`.toLowerCase().includes(search.toLowerCase()));
   const acceptJob = async (job: Job) => { setAccepting(job.id); try { await api.acceptTask(job.id); setNotice(`${job.title} accepted. It is now in My Jobs.`); await loadJobs(); } catch (err: unknown) { setNotice(err instanceof Error ? err.message : "Unable to accept this job."); } finally { setAccepting(null); } };
 

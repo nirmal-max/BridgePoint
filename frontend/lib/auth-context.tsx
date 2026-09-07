@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role?: "customer" | "worker" | "cooperative";
   }) => {
     // Cooperative access is admin-controlled; public signup cannot grant admin privileges.
-    const backendRole = data.role === "worker" ? "labor" : "employer";
+    const backendRole = data.role === "worker" ? "labor" : data.role === "cooperative" ? "cooperative" : "employer";
     const res = await api.register({ ...data, role: backendRole });
     setAuth(res.access_token, res.user);
     return res.user;

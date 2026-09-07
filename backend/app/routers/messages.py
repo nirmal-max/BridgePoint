@@ -15,7 +15,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.job import Job
 from app.models.message import Message
-from app.utils.deps import get_current_user
+from app.utils.deps import get_current_user, require_cooperative
 from app.services.websocket_manager import manager
 
 router = APIRouter(prefix="/api/messages", tags=["Messages"])
@@ -139,11 +139,9 @@ def get_job_messages(
 @router.get("/cooperative/jobs")
 def get_cooperative_message_jobs(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_cooperative),
 ):
     """List assigned jobs available to cooperative admins for support conversations."""
-    if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cooperative access required")
     jobs = db.query(Job).filter(Job.allotted_labor_id.isnot(None)).order_by(Job.updated_at.desc()).limit(100).all()
     return [{"id": job.id, "title": job.title, "city": job.city,
              "employer_name": job.employer.full_name if job.employer else None,

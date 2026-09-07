@@ -24,7 +24,8 @@ const KPIS = [
 export default function CooperativeDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); else if (!user.is_admin) router.replace("/signin?role=cooperative&next=%2Fadmin"); }, [router, user]);
+  const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative"));
+  useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); else if (!cooperativeAccess) router.replace("/dashboard"); }, [cooperativeAccess, router, user]);
   const [period, setPeriod] = useState("Next 7 Days");
   const [sidebar, setSidebar] = useState(false);
   const [search, setSearch] = useState("");
@@ -40,7 +41,7 @@ export default function CooperativeDashboard() {
   useEffect(() => { if (!user) return; const days = Number(period.match(/\d+/)?.[0] || 7); Promise.all([api.getDemandForecast(days), api.getWorkforceAllocation()]).then(([forecastResult, workforceResult]) => { setForecastRows(forecastResult.forecast); setWorkforceRows(workforceResult.workforce); }).catch((err: unknown) => setJobsError(err instanceof Error ? err.message : "Unable to load cooperative intelligence.")); }, [period, user]);
 
   const filteredNav = useMemo(() => NAV.filter(([, label]) => label.toLowerCase().includes(search.toLowerCase())), [search]);
-  if (!user || !user.is_admin) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking cooperative access...</div>;
+  if (!cooperativeAccess) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking cooperative access...</div>;
 
   return (
     <div className="min-h-screen bg-[#f3f7fd] text-slate-900">

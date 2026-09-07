@@ -26,9 +26,10 @@ export default function CooperativeFeaturePage({ section }: { section: Section }
   const { user, loading } = useAuth();
   const [data, setData] = useState<unknown>(null);
   const [error, setError] = useState("");
-  useEffect(() => { if (!loading && !user) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); else if (!loading && user && !user.is_admin) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); }, [loading, router, section, user]);
+  const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative"));
+  useEffect(() => { if (!loading && !user) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); else if (!loading && user && !cooperativeAccess) router.replace("/dashboard"); }, [cooperativeAccess, loading, router, section, user]);
   useEffect(() => { if (!user) return; const load = section === "members" ? api.getCooperativeMembers() : section === "demand-forecast" ? api.getDemandForecast() : section === "workforce" ? api.getWorkforceAllocation() : section === "analytics" ? api.getCooperativeAnalytics() : api.getCooperativeOverview(); load.then(setData).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load cooperative data.")); }, [section, user]);
-  if (loading || !user || !user.is_admin) return <div className="grid min-h-screen place-items-center bg-[#f3f7fd] text-slate-500">Checking cooperative access...</div>;
+  if (loading || !cooperativeAccess) return <div className="grid min-h-screen place-items-center bg-[#f3f7fd] text-slate-500">Checking cooperative access...</div>;
   const [title, description, cards] = copy[section];
   const rows = Array.isArray(data) ? data : data && typeof data === "object" ? Object.entries(data as Record<string, unknown>).map(([label, value]) => ({ label, value })) : [];
   const formatValue = (value: unknown): string => { if (value === null || value === undefined) return "Not available"; if (Array.isArray(value)) return value.map((item) => formatValue(item)).join(", "); if (typeof value === "object") return Object.entries(value as Record<string, unknown>).map(([key, item]) => `${key.replaceAll("_", " ")}: ${formatValue(item)}`).join(" · "); return String(value); };
