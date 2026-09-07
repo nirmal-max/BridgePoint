@@ -33,5 +33,9 @@ class MembershipCreate(BaseModel):
     membership_number: str | None = Field(default=None, max_length=100)
 
 
+class MembershipUpdate(BaseModel):
+    status: str
+
+
 def iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None

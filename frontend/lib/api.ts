@@ -392,7 +392,7 @@ class ApiClient {
   createFederation(data: Record<string, unknown>) { return this.request<import("@/lib/types").Federation>("/api/federations", { method: "POST", body: JSON.stringify(data) }); }
   getFederation(id: number) { return this.request<import("@/lib/types").Federation>(`/api/federations/${id}`); }
   updateFederation(id: number, data: Record<string, unknown>) { return this.request<import("@/lib/types").Federation>(`/api/federations/${id}`, { method: "PATCH", body: JSON.stringify(data) }); }
-  listSocieties(params?: { federation_id?: number; search?: string }) { const query = new URLSearchParams(); if (params?.federation_id) query.set("federation_id", String(params.federation_id)); if (params?.search) query.set("search", params.search); return this.request<import("@/lib/types").Society[]>(`/api/societies${query.toString() ? `?${query}` : ""}`); }
+  listSocieties(params?: { federation_id?: number; search?: string; status?: string }) { const query = new URLSearchParams(); if (params?.federation_id) query.set("federation_id", String(params.federation_id)); if (params?.search) query.set("search", params.search); if (params?.status) query.set("status", params.status); return this.request<import("@/lib/types").Society[]>(`/api/societies${query.toString() ? `?${query}` : ""}`); }
   createSociety(federationId: number, data: Record<string, unknown>) { return this.request<import("@/lib/types").Society>(`/api/societies?federation_id=${federationId}`, { method: "POST", body: JSON.stringify(data) }); }
   getSociety(id: number) { return this.request<import("@/lib/types").Society>(`/api/societies/${id}`); }
   updateSociety(id: number, data: Record<string, unknown>) { return this.request<import("@/lib/types").Society>(`/api/societies/${id}`, { method: "PATCH", body: JSON.stringify(data) }); }
@@ -400,7 +400,7 @@ class ApiClient {
   addSocietyMember(id: number, data: { user_id: number; membership_type?: string; membership_number?: string }) { return this.request<import("@/lib/types").CooperativeMembership>(`/api/societies/${id}/members`, { method: "POST", body: JSON.stringify(data) }); }
   getMembership(id: number) { return this.request<import("@/lib/types").CooperativeMembership>(`/api/memberships/${id}`); }
   getMyMemberships() { return this.request<import("@/lib/types").CooperativeMembership[]>("/api/memberships/me"); }
-  updateMembership(id: number, status: string) { return this.request<import("@/lib/types").CooperativeMembership>(`/api/memberships/${id}?new_status=${encodeURIComponent(status)}`, { method: "PATCH" }); }
+  updateMembership(id: number, status: string) { return this.request<import("@/lib/types").CooperativeMembership>(`/api/memberships/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
   verifyMembership(id: number) { return this.request<import("@/lib/types").CooperativeMembership>(`/api/memberships/${id}/verify`, { method: "POST" }); }
   suspendMembership(id: number) { return this.request<import("@/lib/types").CooperativeMembership>(`/api/memberships/${id}/suspend`, { method: "POST" }); }
 }

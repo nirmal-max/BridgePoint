@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.organization import Federation, Society, CooperativeMembership, MembershipStatus, MembershipType, OrganizationStatus
 from app.models.user import User
-from app.schemas.organization import OrganizationCreate, OrganizationUpdate, MembershipCreate, iso
+from app.schemas.organization import OrganizationCreate, OrganizationUpdate, MembershipCreate, MembershipUpdate, iso
 from app.utils.deps import get_current_user, require_cooperative
 
 router = APIRouter(tags=["Organizations"])
@@ -29,7 +29,7 @@ def can_manage(user: User, owner_id: int | None) -> bool:
 
 
 def federation_out(item: Federation) -> dict:
-    return {"id": item.id, "name": item.name, "registration_number": item.registration_number, "description": item.description, "state": item.state, "district": item.district, "city": item.city, "address": item.address, "contact_email": item.contact_email, "contact_phone": item.contact_phone, "status": item.status.value, "admin_user_id": item.admin_user_id, "created_at": iso(item.created_at), "updated_at": iso(item.updated_at), "society_count": len(item.societies), "member_count": sum(len(s.memberships) for s in item.societies), "verified_member_count": sum(1 for s in item.societies for m in s.memberships if m.status == MembershipStatus.ACTIVE)}
+    return {"id": item.id, "name": item.name, "registration_number": item.registration_number, "description": item.description, "state": item.state, "district": item.district, "city": item.city, "address": item.address, "contact_email": item.contact_email, "contact_phone": item.contact_phone, "status": item.status.value, "admin_user_id": item.admin_user_id, "created_at": iso(item.created_at), "updated_at": iso(item.updated_at), "society_count": len(item.societies), "member_count": sum(len(s.memberships) for s in item.societies), "verified_member_count": sum(1 for s in item.societies for m in s.memberships if m.status == MembershipStatus.ACTIVE), "active_member_count": sum(1 for s in item.societies for m in s.memberships if m.status == MembershipStatus.ACTIVE), "pending_member_count": sum(1 for s in item.societies for m in s.memberships if m.status == MembershipStatus.PENDING)}
 
 
 def society_out(item: Society) -> dict:
@@ -107,12 +107,15 @@ def update_federation(federation_id: int, payload: OrganizationUpdate, db: Sessi
 
 
 @router.get("/api/societies")
-def list_societies(federation_id: int | None = Query(default=None), search: str | None = Query(default=None), db: Session = Depends(get_db), user: User = Depends(require_cooperative)):
+def list_societies(federation_id: int | None = Query(default=None), search: str | None = Query(default=None), status_filter: str | None = Query(default=None, alias="status"), db: Session = Depends(get_db), user: User = Depends(require_cooperative)):
     query = db.query(Society)
     if not user.is_admin:
         query = query.join(Federation).filter((Society.admin_user_id == user.id) | (Federation.admin_user_id == user.id))
     if federation_id: query = query.filter(Society.federation_id == federation_id)
     if search: query = query.filter(Society.name.ilike(f"%{search.strip()}%"))
+    if status_filter:
+        try: query = query.filter(Society.status == OrganizationStatus(status_filter))
+        except ValueError: raise HTTPException(status_code=422, detail="Invalid society status")
     return [society_out(item) for item in query.order_by(Society.created_at.desc()).all()]
 
 
@@ -208,8 +211,8 @@ def suspend_membership(membership_id: int, db: Session = Depends(get_db), user: 
 
 
 @router.patch("/api/memberships/{membership_id}")
-def update_membership(membership_id: int, new_status: str = Query(...), db: Session = Depends(get_db), user: User = Depends(require_cooperative)):
-    try: target = MembershipStatus(new_status)
+def update_membership(membership_id: int, payload: MembershipUpdate, db: Session = Depends(get_db), user: User = Depends(require_cooperative)):
+    try: target = MembershipStatus(payload.status)
     except ValueError: raise HTTPException(status_code=422, detail="Invalid membership status")
     return _change_membership(membership_id, target, db, user)
 
