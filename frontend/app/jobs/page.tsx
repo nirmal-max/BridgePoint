@@ -41,6 +41,11 @@ function JobsContent() {
       router.replace(`/signin?role=worker&next=${encodeURIComponent(`/jobs${window.location.search}`)}`);
       return;
     }
+    if (user) {
+      const role = localStorage.getItem("bp_active_role") || (user.role === "labor" ? "worker" : "customer");
+      router.replace(role === "worker" ? `/worker/available-jobs${window.location.search}` : "/find-services");
+      return;
+    }
     fetchJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user, router]);
