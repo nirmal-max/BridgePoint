@@ -35,8 +35,9 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
             detail="Phone number already registered",
         )
 
-    # Unified user mode: all users get both roles
-    roles = [UserRole.EMPLOYER.value, UserRole.LABOR.value]
+    # Persist the selected product role. Legacy clients may still send "both".
+    roles = ([UserRole.EMPLOYER.value, UserRole.LABOR.value]
+             if payload.role == "both" else [payload.role])
 
     # Create user (auto-admin if email is in ADMIN_EMAILS)
     user = User(

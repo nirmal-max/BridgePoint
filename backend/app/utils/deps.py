@@ -58,12 +58,16 @@ def _get_user_roles(user: User) -> list[str]:
 # pass-through aliases so existing imports don't break.
 
 def require_employer(current_user: User = Depends(get_current_user)) -> User:
-    """DEPRECATED — returns any authenticated user (unified mode)."""
+    """Require an employer/customer capability; legacy dual-role users remain compatible."""
+    if "employer" not in _get_user_roles(current_user) and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Employer access required")
     return current_user
 
 
 def require_labor(current_user: User = Depends(get_current_user)) -> User:
-    """DEPRECATED — returns any authenticated user (unified mode)."""
+    """Require a worker/labor capability; legacy dual-role users remain compatible."""
+    if "labor" not in _get_user_roles(current_user) and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Worker access required")
     return current_user
 
 

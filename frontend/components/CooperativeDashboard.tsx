@@ -15,16 +15,16 @@ const NAV = [
 ] as const;
 
 const KPIS = [
-  ["248", "Total Members", "+12% from last month"],
-  ["187", "Verified Workers", "+75% verified"],
-  ["42", "Active Jobs", "+8% from last week"],
-  ["₹84,500", "Cooperative Earnings", "+21% from last month"],
+  ["Total Members", "Worker records from the cooperative API"],
+  ["Verified Workers", "Email and phone verification status"],
+  ["Active Jobs", "Current job state totals"],
+  ["Cooperative Earnings", "Recorded platform commission"],
 ];
 
 export default function CooperativeDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); }, [router, user]);
+  useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); else if (!user.is_admin) router.replace(user.role === "labor" || user.labor_category ? "/worker" : "/dashboard"); }, [router, user]);
   const [period, setPeriod] = useState("Next 7 Days");
   const [sidebar, setSidebar] = useState(false);
   const [search, setSearch] = useState("");
@@ -40,7 +40,7 @@ export default function CooperativeDashboard() {
   useEffect(() => { if (!user) return; const days = Number(period.match(/\d+/)?.[0] || 7); Promise.all([api.getDemandForecast(days), api.getWorkforceAllocation()]).then(([forecastResult, workforceResult]) => { setForecastRows(forecastResult.forecast); setWorkforceRows(workforceResult.workforce); }).catch((err: unknown) => setJobsError(err instanceof Error ? err.message : "Unable to load cooperative intelligence.")); }, [period, user]);
 
   const filteredNav = useMemo(() => NAV.filter(([, label]) => label.toLowerCase().includes(search.toLowerCase())), [search]);
-  if (!user) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking access...</div>;
+  if (!user || !user.is_admin) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking cooperative access...</div>;
 
   return (
     <div className="min-h-screen bg-[#f3f7fd] text-slate-900">
@@ -101,7 +101,7 @@ export default function CooperativeDashboard() {
 
             {jobsError && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Cooperative job data unavailable: {jobsError}</div>}
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {KPIS.map(([value, label, note], i) => { const live = overview ? [overview.members, overview.verified_workers, overview.active_jobs, `₹${overview.cooperative_revenue.toLocaleString("en-IN")}`][i] : null; return <div key={label} className="rounded-[24px] border border-slate-200 bg-white p-5"><div className="text-3xl mb-3">{["👥","🛡️","📅","₹"][i]}</div><div className="text-3xl font-semibold">{live ?? value}</div><div className="text-slate-600">{label}</div><div className="mt-2 text-emerald-600 text-sm">{overview ? "Live from backend reporting" : `Loading · ${note}`}</div></div>; })}
+              {KPIS.map(([label, note], i) => { const live = overview ? [overview.members, overview.verified_workers, overview.active_jobs, `₹${overview.cooperative_revenue.toLocaleString("en-IN")}`][i] : null; return <div key={label} className="rounded-[24px] border border-slate-200 bg-white p-5"><div className="text-3xl mb-3">{["👥","🛡️","📅","₹"][i]}</div><div className="text-3xl font-semibold">{live ?? "Loading..."}</div><div className="text-slate-600">{label}</div><div className="mt-2 text-slate-500 text-sm">{overview ? "Live from backend reporting" : note}</div></div>; })}
             </section>
 
             <section className="grid xl:grid-cols-2 gap-4">

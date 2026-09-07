@@ -24,7 +24,7 @@ from app.services.state_machine import (
     FEED_VISIBLE_STATUSES, ACTIVE_WORK_STATUSES, HISTORY_STATUSES,
 )
 from app.services.websocket_manager import manager
-from app.utils.deps import get_current_user, require_employer
+from app.utils.deps import get_current_user, require_employer, require_labor
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
 
@@ -414,7 +414,7 @@ def repost_job(
 async def accept_task(
     job_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_labor),
 ):
     """
     Instant task acceptance — first-come-first-serve.

@@ -16,7 +16,7 @@ export default function DashboardPage() {
   }, [loading, router, user]);
   if (!mounted) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Loading dashboard...</div>;
   if (loading || !user) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking access...</div>;
-  const role = localStorage.getItem("bp_active_role") || (user.is_admin ? "cooperative" : user.role === "labor" ? "worker" : "customer");
+  const role = user.is_admin ? "cooperative" : user.role === "labor" || user.labor_category ? "worker" : "customer";
   if (role === "worker") return <WorkerDashboard />;
   if (role === "customer") return <CustomerDashboard />;
   return <CooperativeDashboard />;
