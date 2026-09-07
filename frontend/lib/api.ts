@@ -362,6 +362,28 @@ class ApiClient {
       "/api/payments/platform-info"
     );
   }
+
+  /* ─── Cooperative reporting ─── */
+  getCooperativeOverview() { return this.request<{
+    members: number; verified_workers: number; active_jobs: number;
+    cooperative_revenue: number; jobs_total: number; source: string;
+  }>("/api/cooperative/overview"); }
+  getCooperativeMembers() { return this.request<{
+    id: number; name: string; email: string; city: string; skills: string[];
+    verified: boolean; created_at: string;
+  }[]>("/api/cooperative/members"); }
+  getDemandForecast(days = 7) { return this.request<{ forecast: {
+    skill: string; location: string; forecast_period_days: number; predicted_jobs: number;
+    recent_jobs_30d: number; confidence: string; method: string;
+  }[]; generated_at: string }>(`/api/cooperative/demand-forecast?days=${days}`); }
+  getWorkforceAllocation() { return this.request<{ workforce: {
+    skill: string; predicted_jobs: number; qualified_workers: number; available_workers: number;
+    gap: number; recommendation: string; confidence: string;
+  }[] }>("/api/cooperative/workforce"); }
+  getCooperativeAnalytics() { return this.request<{
+    jobs_posted: number; jobs_completed: number; completion_rate: number;
+    average_job_value: number; jobs_by_category: Record<string, number>; jobs_by_city: Record<string, number>;
+  }>("/api/cooperative/analytics"); }
 }
 
 export const api = new ApiClient();

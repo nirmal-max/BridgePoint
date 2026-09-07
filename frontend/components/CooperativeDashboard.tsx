@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
-import type { Job } from "@/lib/types";
 
 const NAV = [
   "Dashboard",
@@ -52,16 +51,12 @@ export default function CooperativeDashboard() {
   const [profile, setProfile] = useState(false);
   const [memberModal, setMemberModal] = useState(false);
   const [allocModal, setAllocModal] = useState(false);
-  const [cooperativeJobs, setCooperativeJobs] = useState<Job[]>([]);
   const [jobsError, setJobsError] = useState("");
-  const [jobsLoaded, setJobsLoaded] = useState(false);
-  useEffect(() => { if (!user) return; api.getMyJobs().then((result) => setCooperativeJobs(result.jobs)).catch((err: unknown) => setJobsError(err instanceof Error ? err.message : "Unable to load cooperative jobs.")).finally(() => setJobsLoaded(true)); }, [user]);
+  const [overview, setOverview] = useState<{ members: number; verified_workers: number; active_jobs: number; cooperative_revenue: number } | null>(null);
+  useEffect(() => { if (!user) return; api.getCooperativeOverview().then(setOverview).catch((err: unknown) => setJobsError(err instanceof Error ? err.message : "Unable to load cooperative reporting.")); }, [user]);
 
   const series = forecast[period];
   const filteredNav = useMemo(() => NAV.filter((x) => x.toLowerCase().includes(search.toLowerCase())), [search]);
-  const activeJobs = cooperativeJobs.filter((job) => !["payment_completed", "payout_released", "paid"].includes(job.status)).length;
-  const recordedRevenue = cooperativeJobs.reduce((sum, job) => sum + (job.platform_commission || 0), 0);
-
   if (!user) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking access...</div>;
 
   return (
@@ -123,7 +118,7 @@ export default function CooperativeDashboard() {
 
             {jobsError && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Cooperative job data unavailable: {jobsError}</div>}
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {KPIS.map(([value, label, note], i) => { const liveValue = i === 2 && jobsLoaded ? String(activeJobs) : i === 3 && jobsLoaded ? `₹${recordedRevenue.toLocaleString("en-IN")}` : value; return <div key={label} className="rounded-[24px] border border-slate-200 bg-white p-5"><div className="text-3xl mb-3">{["👥","🛡️","📅","₹"][i]}</div><div className="text-3xl font-semibold">{liveValue}</div><div className="text-slate-600">{label}</div><div className="mt-2 text-emerald-600 text-sm">{jobsLoaded && i >= 2 ? "Live from cooperative jobs" : `↑ ${note}`}</div></div>; })}
+              {KPIS.map(([value, label, note], i) => { const live = overview ? [overview.members, overview.verified_workers, overview.active_jobs, `₹${overview.cooperative_revenue.toLocaleString("en-IN")}`][i] : null; return <div key={label} className="rounded-[24px] border border-slate-200 bg-white p-5"><div className="text-3xl mb-3">{["👥","🛡️","📅","₹"][i]}</div><div className="text-3xl font-semibold">{live ?? value}</div><div className="text-slate-600">{label}</div><div className="mt-2 text-emerald-600 text-sm">{overview ? "Live from backend reporting" : `Loading · ${note}`}</div></div>; })}
             </section>
 
             <section className="grid xl:grid-cols-2 gap-4">

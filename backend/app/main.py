@@ -35,7 +35,7 @@ from app.models.password_reset import PasswordReset
 from app.models.payment import Payment
 
 # Import routers
-from app.routers import auth, jobs, applications, reviews, favorites, payments, websocket, calls, messages, private_requests, password_reset
+from app.routers import auth, jobs, applications, reviews, favorites, payments, websocket, calls, messages, private_requests, password_reset, cooperative
 
 # ─── Create tables ──────────────────────────────────────
 try:
@@ -78,6 +78,7 @@ app.include_router(websocket.router)
 app.include_router(calls.router)
 app.include_router(messages.router)
 app.include_router(private_requests.router)
+app.include_router(cooperative.router)
 
 
 # ─── Health Check ───────────────────────────────────────
