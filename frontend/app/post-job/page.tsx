@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -27,6 +27,10 @@ export default function PostJobPage() {
     organization_type: "individual",
     budget: "",
   });
+
+  useEffect(() => {
+    if (!user) router.replace("/signin?role=customer&next=%2Fpost-job");
+  }, [router, user]);
 
   const update = (key: string, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));

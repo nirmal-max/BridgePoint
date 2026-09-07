@@ -39,6 +39,10 @@ export default function JobDetailPage() {
   const jobId = Number(id);
 
   useEffect(() => {
+    if (!user) router.replace(`/signin?role=worker&next=${encodeURIComponent(`/jobs/${jobId}`)}`);
+  }, [jobId, router, user]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const j = await api.getJob(jobId);
@@ -49,8 +53,8 @@ export default function JobDetailPage() {
         setLoading(false);
       }
     };
-    if (jobId) fetchData();
-  }, [jobId]);
+    if (jobId && user) fetchData();
+  }, [jobId, user]);
 
   // Auto-dismiss toast
   useEffect(() => {

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type { Job } from "@/lib/types";
@@ -12,10 +13,12 @@ const links = [["/worker", "Dashboard"], ["/jobs", "Available Jobs"], ["/worker/
 
 export default function WorkerFeaturePage({ section }: { section: Section }) {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(section === "jobs" || section === "earnings");
   const [error, setError] = useState("");
+  useEffect(() => { if (!user) router.replace(`/signin?role=worker&next=${encodeURIComponent(`/worker/${section === "skill-passport" ? "skill-passport" : section}`)}`); }, [router, section, user]);
   const name = mounted ? (user?.full_name || "Worker") : "Worker";
   useEffect(() => {
     if (section !== "jobs" && section !== "earnings") return;

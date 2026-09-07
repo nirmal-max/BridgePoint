@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
 const NAV = [
@@ -37,6 +38,8 @@ function pct(n: number, d: number) { return Math.round((n / d) * 100); }
 
 export default function CooperativeDashboard() {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); }, [router, user]);
   const [nav, setNav] = useState(0);
   const [period, setPeriod] = useState<keyof typeof forecast>("Next 7 Days");
   const [revPeriod, setRevPeriod] = useState("This Month");
@@ -50,6 +53,8 @@ export default function CooperativeDashboard() {
 
   const series = forecast[period];
   const filteredNav = useMemo(() => NAV.filter((x) => x.toLowerCase().includes(search.toLowerCase())), [search]);
+
+  if (!user) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking access...</div>;
 
   return (
     <div className="min-h-screen bg-[#f3f7fd] text-slate-900">

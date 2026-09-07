@@ -12,6 +12,7 @@ export default function Header() {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const currentUser = mounted ? user : null;
+  const dashboardHref = currentUser?.is_admin ? "/admin" : currentUser?.role === "labor" ? "/worker" : "/dashboard";
 
   if (
     pathname === "/" ||
@@ -44,7 +45,7 @@ export default function Header() {
           )}
           {currentUser ? (
             <>
-              <Link href="/dashboard" className="hover:text-[var(--color-bp-black)] transition-colors">
+              <Link href={dashboardHref} className="hover:text-[var(--color-bp-black)] transition-colors">
                 Dashboard
               </Link>
               {currentUser.is_admin && (
@@ -106,7 +107,7 @@ export default function Header() {
             )}
             {currentUser ? (
               <>
-                <Link href="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                <Link href={dashboardHref} onClick={() => setMenuOpen(false)}>Dashboard</Link>
                 {currentUser.is_admin && (
                   <Link href="/admin" onClick={() => setMenuOpen(false)} className="text-purple-600">Admin Panel</Link>
                 )}

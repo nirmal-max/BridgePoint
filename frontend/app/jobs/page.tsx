@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { Job, STATUS_LABELS, STATUS_COLORS, WORK_DESCRIPTIONS, JOB_CATEGORIES } from "@/lib/types";
 import { Suspense } from "react";
 
 function JobsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -34,9 +37,15 @@ function JobsContent() {
   };
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace(`/signin?role=worker&next=${encodeURIComponent(`/jobs${window.location.search}`)}`);
+      return;
+    }
     fetchJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user) return <div className="pt-14 min-h-screen bg-[var(--color-bp-gray-100)] flex items-center justify-center text-[var(--color-bp-gray-500)]">Checking access...</div>;
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
