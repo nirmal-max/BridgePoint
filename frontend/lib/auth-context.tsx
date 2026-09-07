@@ -15,7 +15,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (data: {
     email: string;
     phone: string;
@@ -26,7 +26,7 @@ interface AuthContextType {
     city?: string;
     bio?: string;
     role?: "customer" | "worker" | "cooperative";
-  }) => Promise<void>;
+  }) => Promise<User>;
   logout: () => void;
 }
 
@@ -96,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const res = await api.login(email, password);
     setAuth(res.access_token, res.user);
+    return res.user;
   };
 
   const register = async (data: {
@@ -113,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const backendRole = data.role === "worker" ? "labor" : "employer";
     const res = await api.register({ ...data, role: backendRole });
     setAuth(res.access_token, res.user);
+    return res.user;
   };
 
   return (
