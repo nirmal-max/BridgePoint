@@ -24,7 +24,7 @@ const KPIS = [
 export default function CooperativeDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); else if (!user.is_admin) router.replace(user.role === "labor" || user.labor_category ? "/worker" : "/dashboard"); }, [router, user]);
+  useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); else if (!user.is_admin) router.replace("/signin?role=cooperative&next=%2Fadmin"); }, [router, user]);
   const [period, setPeriod] = useState("Next 7 Days");
   const [sidebar, setSidebar] = useState(false);
   const [search, setSearch] = useState("");

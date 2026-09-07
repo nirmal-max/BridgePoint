@@ -26,7 +26,7 @@ export default function CooperativeFeaturePage({ section }: { section: Section }
   const { user, loading } = useAuth();
   const [data, setData] = useState<unknown>(null);
   const [error, setError] = useState("");
-  useEffect(() => { if (!loading && !user) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); else if (!loading && user && !user.is_admin) router.replace(user.role === "labor" || user.labor_category ? "/worker" : "/dashboard"); }, [loading, router, section, user]);
+  useEffect(() => { if (!loading && !user) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); else if (!loading && user && !user.is_admin) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); }, [loading, router, section, user]);
   useEffect(() => { if (!user) return; const load = section === "members" ? api.getCooperativeMembers() : section === "demand-forecast" ? api.getDemandForecast() : section === "workforce" ? api.getWorkforceAllocation() : section === "analytics" ? api.getCooperativeAnalytics() : api.getCooperativeOverview(); load.then(setData).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load cooperative data.")); }, [section, user]);
   if (loading || !user || !user.is_admin) return <div className="grid min-h-screen place-items-center bg-[#f3f7fd] text-slate-500">Checking cooperative access...</div>;
   const [title, description, cards] = copy[section];
