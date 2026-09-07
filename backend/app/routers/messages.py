@@ -53,7 +53,7 @@ async def send_message(
         raise HTTPException(status_code=404, detail="Job not found")
 
     # Security: only employer and assigned labor can chat
-    if current_user.id not in [job.employer_id, job.allotted_labor_id]:
+    if not current_user.is_admin and current_user.id not in [job.employer_id, job.allotted_labor_id]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only job participants can send messages",
@@ -118,7 +118,7 @@ def get_job_messages(
         raise HTTPException(status_code=404, detail="Job not found")
 
     # Security: only participants
-    if current_user.id not in [job.employer_id, job.allotted_labor_id]:
+    if not current_user.is_admin and current_user.id not in [job.employer_id, job.allotted_labor_id]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only job participants can view messages",
@@ -134,6 +134,21 @@ def get_job_messages(
     )
 
     return [_message_to_response(m) for m in messages]
+
+
+@router.get("/cooperative/jobs")
+def get_cooperative_message_jobs(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List assigned jobs available to cooperative admins for support conversations."""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cooperative access required")
+    jobs = db.query(Job).filter(Job.allotted_labor_id.isnot(None)).order_by(Job.updated_at.desc()).limit(100).all()
+    return [{"id": job.id, "title": job.title, "city": job.city,
+             "employer_name": job.employer.full_name if job.employer else None,
+             "worker_name": job.allotted_labor.full_name if job.allotted_labor else None}
+            for job in jobs]
 
 
 def _message_to_response(

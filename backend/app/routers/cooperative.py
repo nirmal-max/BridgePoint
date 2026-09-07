@@ -38,16 +38,16 @@ def _forecast(db: Session, days: int = 7) -> list[dict]:
     baseline_start = now - timedelta(days=90)
     recent = db.query(Job).filter(Job.created_at >= recent_start).all()
     baseline = db.query(Job).filter(Job.created_at >= baseline_start).count()
-    counts = Counter((job.required_skill or job.work_description or "Uncategorized").strip() for job in recent)
+    counts = Counter(((job.required_skill or job.work_description or "Uncategorized").strip(), job.city or "Unknown") for job in recent)
     if not counts:
         return []
     daily_factor = days / 30
     confidence = "high" if baseline >= 10 else "medium" if baseline >= 3 else "low"
     return [
-        {"skill": skill, "location": "All locations", "forecast_period_days": days,
+        {"skill": skill, "location": city, "forecast_period_days": days,
          "predicted_jobs": max(1, round(count * daily_factor)), "recent_jobs_30d": count,
          "confidence": confidence, "method": "30-day moving average of posted jobs"}
-        for skill, count in counts.most_common(12)
+        for (skill, city), count in counts.most_common(12)
     ]
 
 

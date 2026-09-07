@@ -144,10 +144,8 @@ export default function CooperativeDashboard() {
 
             <section className="grid xl:grid-cols-3 gap-4">
               <div className="rounded-[28px] border bg-white p-5 xl:col-span-1">
-                <div className="flex justify-between"><div className="text-xl font-semibold">Recent Activities</div><button className="text-blue-600 text-sm">View All</button></div>
-                <div className="mt-4 space-y-4 text-sm">
-                  {["New worker registration","Job completed","Verification approved","New service request in your area","Payout processed"].map((t, i) => <div key={t} className="flex justify-between border-b last:border-0 pb-3 last:pb-0"><div><div className="font-medium">{t}</div><div className="text-slate-500">{["Arun K. (Electrician)","AC Servicing - T. Nagar","Meena S. (Plumber)","Electrical Repair - Adyar","₹1,200 to Ravi K."][i]}</div></div><div className="text-slate-400">{["2 hours ago","4 hours ago","6 hours ago","8 hours ago","1 day ago"][i]}</div></div>)}
-                </div>
+                <div className="flex justify-between"><div className="text-xl font-semibold">Recent Activities</div><Link href="/admin/analytics" className="text-blue-600 text-sm">View Analytics</Link></div>
+                <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Activity history is not stored as a dedicated feed yet. Use Analytics for verified job totals and status data.</p>
               </div>
               <div className="rounded-[28px] border bg-white p-5 xl:col-span-1">
                 <div className="flex justify-between items-center"><div className="text-xl font-semibold">Cooperative Revenue</div><button className="text-blue-600 text-sm">View Details</button></div>
@@ -157,13 +155,12 @@ export default function CooperativeDashboard() {
               </div>
               <div className="space-y-4 xl:col-span-1">
                 <div className="rounded-[28px] border bg-white p-5">
-                  <div className="flex justify-between"><div className="text-xl font-semibold">Member Growth</div><button className="text-blue-600 text-sm">View Report</button></div>
-                  <div className="mt-2 text-4xl font-semibold">+24</div><div className="text-sm text-slate-500">New members this month</div>
-                  <div className="mt-4 h-24 flex items-end gap-2">{[18,20,25,25,31,34].map((h, i) => <div key={i} className="flex-1 rounded-t-lg bg-blue-400" style={{ height: `${h}px` }} />)}</div>
+                  <div className="flex justify-between"><div className="text-xl font-semibold">Member Directory</div><Link href="/admin/members" className="text-blue-600 text-sm">View Members</Link></div>
+                  <div className="mt-4 text-sm text-slate-600">{overview ? `${overview.members} workers recorded, including ${overview.verified_workers} verified.` : "Loading member data..."}</div>
                 </div>
                 <div className="rounded-[28px] border bg-white p-5">
-                  <div className="flex justify-between"><div className="text-xl font-semibold">Top Performing Services</div><select className="rounded-xl border px-2 py-1 text-sm"><option>This Month</option></select></div>
-                  <div className="mt-4 space-y-3 text-sm">{["Electrical Services","Plumbing Services","AC Servicing","House Cleaning","Carpentry"].map((s, i) => <div key={s} className="flex justify-between"><span>{i + 1}. {s}</span><span className="text-slate-500">{[38,27,22,18,15][i]} jobs</span></div>)}</div>
+                  <div className="flex justify-between"><div className="text-xl font-semibold">Service Performance</div><Link href="/admin/analytics" className="text-blue-600 text-sm">View Report</Link></div>
+                  <div className="mt-4 text-sm text-slate-600">Category and city breakdowns are calculated from recorded jobs in Analytics.</div>
                 </div>
               </div>
             </section>

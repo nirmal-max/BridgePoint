@@ -270,6 +270,10 @@ class ApiClient {
     >(`/api/messages/job/${jobId}?page=${page}`);
   }
 
+  getCooperativeMessageJobs() {
+    return this.request<{ id: number; title: string; city: string; employer_name: string | null; worker_name: string | null }[]>("/api/messages/cooperative/jobs");
+  }
+
   /* ─── Private Requests (Direct Rehire) ─── */
   sendPrivateRequest(data: { job_id: number; labor_id: number; message?: string }) {
     return this.request<import("./types").PrivateRequest>("/api/private-requests", {
