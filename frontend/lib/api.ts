@@ -376,10 +376,10 @@ class ApiClient {
     id: number; name: string; email: string; city: string; skills: string[];
     verified: boolean; created_at: string;
   }[]>("/api/cooperative/members"); }
-  getDemandForecast(days = 7) { return this.request<{ forecast: {
+  getDemandForecast(days = 7, location?: string) { return this.request<{ forecast: {
     skill: string; location: string; forecast_period_days: number; predicted_jobs: number;
     recent_jobs_30d: number; confidence: string; method: string;
-  }[]; generated_at: string }>(`/api/cooperative/demand-forecast?days=${days}`); }
+  }[]; location: string; generated_at: string }>(`/api/cooperative/demand-forecast?days=${days}${location ? `&location=${encodeURIComponent(location)}` : ""}`); }
   getWorkforceAllocation() { return this.request<{ workforce: {
     skill: string; predicted_jobs: number; qualified_workers: number; available_workers: number;
     gap: number; recommendation: string; confidence: string;

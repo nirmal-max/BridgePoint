@@ -30,11 +30,14 @@ def _worker_query(db: Session):
     return db.query(User).filter(User.labor_category.isnot(None))
 
 
-def _forecast(db: Session, days: int = 7) -> list[dict]:
+def _forecast(db: Session, days: int = 7, location: str | None = None) -> list[dict]:
     now = datetime.now(timezone.utc)
     recent_start = now - timedelta(days=30)
     baseline_start = now - timedelta(days=90)
-    recent = db.query(Job).filter(Job.created_at >= recent_start).all()
+    recent_query = db.query(Job).filter(Job.created_at >= recent_start)
+    if location:
+        recent_query = recent_query.filter(Job.city.ilike(location.strip()))
+    recent = recent_query.all()
     baseline = db.query(Job).filter(Job.created_at >= baseline_start).count()
     counts = Counter(((job.required_skill or job.work_description or "Uncategorized").strip(), job.city or "Unknown") for job in recent)
     if not counts:
@@ -75,10 +78,10 @@ def members(db: Session = Depends(get_db), _: User = Depends(_admin)):
 
 
 @router.get("/demand-forecast")
-def demand_forecast(days: int = 7, db: Session = Depends(get_db), _: User = Depends(_admin)):
+def demand_forecast(days: int = 7, location: str | None = None, db: Session = Depends(get_db), _: User = Depends(_admin)):
     if days not in (7, 14, 30):
         raise HTTPException(status_code=400, detail="days must be 7, 14, or 30")
-    return {"forecast": _forecast(db, days), "generated_at": datetime.now(timezone.utc)}
+    return {"forecast": _forecast(db, days, location), "location": location or "All locations", "generated_at": datetime.now(timezone.utc)}
 
 
 @router.get("/workforce")
