@@ -42,7 +42,7 @@ function JobsContent() {
       return;
     }
     if (user) {
-      const role = localStorage.getItem("bp_active_role") || (user.role === "labor" ? "worker" : "customer");
+      const role = user.is_admin ? "cooperative" : user.role === "labor" || user.labor_category ? "worker" : "customer";
       router.replace(role === "worker" ? `/worker/available-jobs${window.location.search}` : "/find-services");
       return;
     }

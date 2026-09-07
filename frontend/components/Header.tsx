@@ -12,7 +12,7 @@ export default function Header() {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const currentUser = mounted ? user : null;
-  const dashboardHref = currentUser?.is_admin ? "/admin" : currentUser?.role === "labor" ? "/worker" : "/dashboard";
+  const dashboardHref = currentUser?.is_admin ? "/admin" : currentUser?.role === "labor" || currentUser?.labor_category ? "/worker" : "/dashboard";
 
   if (
     pathname === "/" ||
