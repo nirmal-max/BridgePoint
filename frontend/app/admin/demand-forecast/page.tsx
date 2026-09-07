@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function DemandForecastPage() { return <ReferenceWorkspace role="cooperative" section="demand-forecast" />; }
+import CooperativeFeaturePage from "@/components/CooperativeFeaturePage";
+export default function DemandForecastPage() { return <CooperativeFeaturePage section="demand-forecast" />; }

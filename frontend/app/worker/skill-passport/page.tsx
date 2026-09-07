@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function SkillPassportPage() { return <ReferenceWorkspace role="worker" section="skill-passport" />; }
+import WorkerFeaturePage from "@/components/WorkerFeaturePage";
+export default function SkillPassportPage() { return <WorkerFeaturePage section="skill-passport" />; }

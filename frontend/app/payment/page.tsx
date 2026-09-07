@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function PaymentPage() { return <ReferenceWorkspace role="customer" section="payment" />; }
+import CustomerFeaturePage from "@/components/CustomerFeaturePage";
+export default function PaymentPage() { return <CustomerFeaturePage section="payment" />; }

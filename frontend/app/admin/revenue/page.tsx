@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function RevenuePage() { return <ReferenceWorkspace role="cooperative" section="revenue" />; }
+import CooperativeFeaturePage from "@/components/CooperativeFeaturePage";
+export default function RevenuePage() { return <CooperativeFeaturePage section="revenue" />; }

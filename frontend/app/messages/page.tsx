@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function MessagesPage() { return <ReferenceWorkspace role="customer" section="messages" />; }
+import CustomerFeaturePage from "@/components/CustomerFeaturePage";
+export default function MessagesPage() { return <CustomerFeaturePage section="messages" />; }

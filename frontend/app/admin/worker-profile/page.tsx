@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function WorkerProfilePage() { return <ReferenceWorkspace role="cooperative" section="worker-profile" />; }
+import CooperativeFeaturePage from "@/components/CooperativeFeaturePage";
+export default function WorkerProfilePage() { return <CooperativeFeaturePage section="worker-profile" />; }

@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function VerificationPage() { return <ReferenceWorkspace role="cooperative" section="verification" />; }
+import CooperativeFeaturePage from "@/components/CooperativeFeaturePage";
+export default function VerificationPage() { return <CooperativeFeaturePage section="verification" />; }

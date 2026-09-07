@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function ReviewsPage() { return <ReferenceWorkspace role="customer" section="reviews" />; }
+import CustomerFeaturePage from "@/components/CustomerFeaturePage";
+export default function ReviewsPage() { return <CustomerFeaturePage section="reviews" />; }

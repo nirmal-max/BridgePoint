@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function WorkerTrainingPage() { return <ReferenceWorkspace role="worker" section="training" />; }
+import WorkerFeaturePage from "@/components/WorkerFeaturePage";
+export default function WorkerTrainingPage() { return <WorkerFeaturePage section="training" />; }

@@ -1,6 +1,6 @@
 // Bridge Point — Service Worker (Production Hardened)
 // DO NOT cache API or auth endpoints.
-const CACHE_NAME = "bridgepoint-v2";
+const CACHE_NAME = "bridgepoint-v3";
 const OFFLINE_URL = "/offline.html";
 
 // Paths that must NEVER be cached

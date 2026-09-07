@@ -1,2 +1,2 @@
-import ReferenceWorkspace from "@/components/ReferenceWorkspace";
-export default function EmergencyPage() { return <ReferenceWorkspace role="customer" section="emergency" />; }
+import CustomerFeaturePage from "@/components/CustomerFeaturePage";
+export default function EmergencyPage() { return <CustomerFeaturePage section="emergency" />; }
