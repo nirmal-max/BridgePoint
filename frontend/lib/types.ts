@@ -17,6 +17,10 @@ export interface User {
   created_at: string;
 }
 
+export interface Federation { id: number; name: string; registration_number?: string | null; description?: string | null; state?: string | null; district?: string | null; city?: string | null; address?: string | null; contact_email?: string | null; contact_phone?: string | null; status: string; admin_user_id?: number | null; created_at: string; updated_at: string; society_count: number; member_count: number; verified_member_count: number; }
+export interface Society { id: number; federation_id: number; federation_name?: string | null; name: string; registration_number?: string | null; description?: string | null; state?: string | null; district?: string | null; city?: string | null; address?: string | null; status: string; admin_user_id?: number | null; created_at: string; updated_at: string; member_count: number; verified_member_count: number; }
+export interface CooperativeMembership { id: number; user_id: number; worker_name?: string | null; worker_email?: string | null; society_id: number; society_name?: string | null; federation_id?: number | null; membership_number: string; membership_type: string; status: string; joined_at: string; verified_at?: string | null; verified_by?: number | null; }
+
 export interface TokenResponse {
   access_token: string;
   token_type: string;

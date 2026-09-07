@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
 const NAV = [
-  ["/admin", "Dashboard"], ["/admin/members", "Members / Workers"],
+  ["/admin", "Dashboard"], ["/admin/federation", "Federation"], ["/admin/societies", "Societies"], ["/admin/members", "Members / Workers"],
   ["/admin/jobs", "Job Management"], ["/admin/demand-forecast", "Demand Forecast (AI)"],
   ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"],
   ["/admin/training", "Training & Welfare"], ["/admin/verification", "Verifications"],

@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
 type Section = "members" | "worker-profile" | "verification" | "demand-forecast" | "workforce" | "revenue" | "analytics" | "jobs" | "training" | "settings";
-const links = [["/admin", "Dashboard"], ["/admin/members", "Members / Workers"], ["/admin/jobs", "Job Management"], ["/admin/worker-profile", "Worker Profile"], ["/admin/verification", "Verification Center"], ["/admin/demand-forecast", "AI Demand Forecast"], ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"], ["/admin/training", "Training & Welfare"], ["/admin/analytics", "Analytics & Reports"], ["/admin/messages", "Messages"], ["/admin/settings", "Settings"]] as const;
+const links = [["/admin", "Dashboard"], ["/admin/federation", "Federation"], ["/admin/societies", "Societies"], ["/admin/members", "Members / Workers"], ["/admin/jobs", "Job Management"], ["/admin/worker-profile", "Worker Profile"], ["/admin/verification", "Verification Center"], ["/admin/demand-forecast", "AI Demand Forecast"], ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"], ["/admin/training", "Training & Welfare"], ["/admin/analytics", "Analytics & Reports"], ["/admin/messages", "Messages"], ["/admin/settings", "Settings"]] as const;
 const copy: Record<Section, [string, string, string[]]> = {
   members: ["Members / Workers", "Manage cooperative members and verification progress.", ["Member directory", "Verification status", "Worker skills"]],
   "worker-profile": ["Worker Profile", "Review worker identity, skills, and cooperative membership.", ["Identity status", "Skill certifications", "Insurance status"]],
