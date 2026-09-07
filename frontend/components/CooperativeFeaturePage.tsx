@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
-type Section = "members" | "worker-profile" | "verification" | "demand-forecast" | "workforce" | "revenue" | "analytics";
-const links = [["/admin", "Dashboard"], ["/admin/members", "Members / Workers"], ["/admin/worker-profile", "Worker Profile"], ["/admin/verification", "Verification Center"], ["/admin/demand-forecast", "AI Demand Forecast"], ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"], ["/admin/analytics", "Analytics & Reports"]] as const;
+type Section = "members" | "worker-profile" | "verification" | "demand-forecast" | "workforce" | "revenue" | "analytics" | "jobs" | "training" | "settings";
+const links = [["/admin", "Dashboard"], ["/admin/members", "Members / Workers"], ["/admin/jobs", "Job Management"], ["/admin/worker-profile", "Worker Profile"], ["/admin/verification", "Verification Center"], ["/admin/demand-forecast", "AI Demand Forecast"], ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"], ["/admin/training", "Training & Welfare"], ["/admin/analytics", "Analytics & Reports"], ["/admin/messages", "Messages"], ["/admin/settings", "Settings"]] as const;
 const copy: Record<Section, [string, string, string[]]> = {
   members: ["Members / Workers", "Manage cooperative members and verification progress.", ["248 total members", "187 verified workers", "12 pending verification"]],
   "worker-profile": ["Worker Profile", "Review worker identity, skills, and cooperative membership.", ["Identity status", "Skill certifications", "Insurance status"]],
@@ -16,6 +16,9 @@ const copy: Record<Section, [string, string, string[]]> = {
   workforce: ["Workforce Allocation", "Allocate verified workers using demand, skills, and availability.", ["4 electricians needed", "2 plumbers available", "1 carpenter pending"]],
   revenue: ["Earnings & Revenue", "Review cooperative revenue and recorded payment activity.", ["Cooperative share", "Platform commission", "Welfare and training fund"]],
   analytics: ["Analytics & Reports", "Track operational performance across your cooperative.", ["Jobs completed", "Worker growth", "Service performance"]],
+  jobs: ["Job Management", "Review jobs and operational status from the existing job system.", ["Posted jobs", "Assigned jobs", "Completed jobs"]],
+  training: ["Training & Welfare", "Track worker development and clearly separate live data from future provider integrations.", ["Skills", "Training pathways", "Welfare integrations are not connected"]],
+  settings: ["Settings", "Review cooperative account and access settings.", ["Account access", "Notifications", "Backend permissions"]],
 };
 
 export default function CooperativeFeaturePage({ section }: { section: Section }) {

@@ -1,23 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
 const NAV = [
-  "Dashboard",
-  "Members / Workers",
-  "Job Management",
-  "Demand Forecast (AI)",
-  "Workforce Allocation",
-  "Earnings & Revenue",
-  "Training & Welfare",
-  "Verifications",
-  "Analytics & Reports",
-  "Messages",
-  "Settings",
-];
+  ["/admin", "Dashboard"], ["/admin/members", "Members / Workers"],
+  ["/admin/jobs", "Job Management"], ["/admin/demand-forecast", "Demand Forecast (AI)"],
+  ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"],
+  ["/admin/training", "Training & Welfare"], ["/admin/verification", "Verifications"],
+  ["/admin/analytics", "Analytics & Reports"], ["/admin/messages", "Messages"], ["/admin/settings", "Settings"],
+] as const;
 
 const KPIS = [
   ["248", "Total Members", "+12% from last month"],
@@ -26,37 +21,25 @@ const KPIS = [
   ["₹84,500", "Cooperative Earnings", "+21% from last month"],
 ];
 
-const forecast = {
-  "Next 7 Days": { Electrical: [34, 41, 41, 52, 47, 50, 46], Plumbing: [18, 20, 25, 29, 22, 23, 21], Cleaning: [8, 9, 12, 15, 11, 13, 10], Carpentry: [4, 4, 5, 7, 4, 6, 4] },
-  "Next 14 Days": { Electrical: [30, 34, 39, 45, 49, 51, 53], Plumbing: [16, 18, 20, 23, 25, 24, 22], Cleaning: [7, 8, 9, 12, 13, 12, 11], Carpentry: [3, 4, 4, 5, 6, 5, 4] },
-  "Next 30 Days": { Electrical: [28, 32, 36, 40, 44, 48, 52], Plumbing: [15, 17, 18, 21, 22, 24, 25], Cleaning: [6, 7, 8, 9, 10, 11, 12], Carpentry: [3, 3, 4, 4, 5, 5, 6] },
-} as const;
-
-const bars = [18, 28, 42, 34, 50, 58, 44, 63];
-const revenue = [12, 18, 22, 20, 26, 30, 33, 39];
-
-function pct(n: number, d: number) { return Math.round((n / d) * 100); }
-
 export default function CooperativeDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
   useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); }, [router, user]);
-  const [nav, setNav] = useState(0);
-  const [period, setPeriod] = useState<keyof typeof forecast>("Next 7 Days");
-  const [revPeriod, setRevPeriod] = useState("This Month");
+  const [period, setPeriod] = useState("Next 7 Days");
   const [sidebar, setSidebar] = useState(false);
   const [search, setSearch] = useState("");
   const [notify, setNotify] = useState(false);
   const [msg, setMsg] = useState(false);
   const [profile, setProfile] = useState(false);
   const [memberModal, setMemberModal] = useState(false);
-  const [allocModal, setAllocModal] = useState(false);
   const [jobsError, setJobsError] = useState("");
   const [overview, setOverview] = useState<{ members: number; verified_workers: number; active_jobs: number; cooperative_revenue: number } | null>(null);
+  const [forecastRows, setForecastRows] = useState<{ skill: string; predicted_jobs: number; confidence: string }[]>([]);
+  const [workforceRows, setWorkforceRows] = useState<{ skill: string; qualified_workers: number; available_workers: number; gap: number; recommendation: string }[]>([]);
   useEffect(() => { if (!user) return; api.getCooperativeOverview().then(setOverview).catch((err: unknown) => setJobsError(err instanceof Error ? err.message : "Unable to load cooperative reporting.")); }, [user]);
+  useEffect(() => { if (!user) return; const days = Number(period.match(/\d+/)?.[0] || 7); Promise.all([api.getDemandForecast(days), api.getWorkforceAllocation()]).then(([forecastResult, workforceResult]) => { setForecastRows(forecastResult.forecast); setWorkforceRows(workforceResult.workforce); }).catch((err: unknown) => setJobsError(err instanceof Error ? err.message : "Unable to load cooperative intelligence.")); }, [period, user]);
 
-  const series = forecast[period];
-  const filteredNav = useMemo(() => NAV.filter((x) => x.toLowerCase().includes(search.toLowerCase())), [search]);
+  const filteredNav = useMemo(() => NAV.filter(([, label]) => label.toLowerCase().includes(search.toLowerCase())), [search]);
   if (!user) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking access...</div>;
 
   return (
@@ -69,10 +52,10 @@ export default function CooperativeDashboard() {
               <div className="text-sm text-slate-500">Work that matters. People who care.</div>
             </div>
             <nav className="space-y-1 text-sm">
-              {filteredNav.map((item, i) => (
-                <button key={item} onClick={() => setNav(i)} className={`w-full text-left px-4 py-3 rounded-2xl ${nav === i ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-600 hover:bg-slate-50"}`}>
-                  {item}
-                </button>
+              {filteredNav.map(([href, label]) => (
+                <Link key={href} href={href} onClick={() => setSidebar(false)} className={`block w-full px-4 py-3 rounded-2xl ${href === "/admin" ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-600 hover:bg-slate-50"}`}>
+                  {label}
+                </Link>
               ))}
             </nav>
             <div className="mt-auto rounded-3xl bg-gradient-to-br from-blue-50 to-sky-100 p-5">
@@ -128,23 +111,20 @@ export default function CooperativeDashboard() {
                     <div className="text-xl font-semibold">AI Demand Forecast</div>
                     <div className="text-sm text-slate-500">Predicts service demand in your area to help you plan workforce and resources.</div>
                   </div>
-                  <select value={period} onChange={(e) => setPeriod(e.target.value as keyof typeof forecast)} className="rounded-xl border px-3 py-2 text-sm">
-                    {Object.keys(forecast).map(k => <option key={k}>{k}</option>)}
+                  <select value={period} onChange={(e) => setPeriod(e.target.value)} className="rounded-xl border px-3 py-2 text-sm">
+                    {['Next 7 Days', 'Next 14 Days', 'Next 30 Days'].map(k => <option key={k}>{k}</option>)}
                   </select>
                 </div>
                 <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_210px] gap-4">
-                  <div className="h-64 rounded-3xl border bg-gradient-to-b from-white to-blue-50 p-4">
-                    <div className="flex items-end gap-4 h-full">
-                      {series.Electrical.map((_, idx) => <div key={idx} className="flex-1 flex items-end gap-1 h-full">
-                        {(["Electrical","Plumbing","Cleaning","Carpentry"] as const).map((k, sIdx) => <div key={k} className="flex-1 rounded-t-lg" style={{ height: `${series[k][idx] * 3}px`, background: ["#1d77ff","#8b5cf6","#22c55e","#fb923c"][sIdx], opacity: 0.9 }} />)}
-                      </div>)}
-                    </div>
+                  <div className="rounded-3xl border bg-gradient-to-b from-white to-blue-50 p-4">
+                    <div className="mb-3 text-sm text-slate-500">Calculated from the last 30 days of jobs. Location: all recorded locations.</div>
+                    <div className="space-y-3">{forecastRows.length ? forecastRows.slice(0, 8).map((row) => <div key={row.skill} className="flex items-center justify-between rounded-2xl bg-white/80 px-4 py-3"><span className="font-medium">{row.skill}</span><span className="text-right"><strong>{row.predicted_jobs}</strong> jobs<br /><small className="text-slate-500">{row.confidence} confidence</small></span></div>) : <div className="py-12 text-center text-sm text-slate-500">No recent job history is available for forecasting.</div>}</div>
                   </div>
                   <div className="space-y-3">
-                    {["Electrical","Plumbing","Cleaning","Carpentry"].map((k, i) => <div key={k} className="rounded-2xl border p-3">
-                      <div className="flex justify-between text-sm"><span>{k}</span><span className={i ? "text-amber-600" : "text-red-600"}>{["High","Medium","Medium","Low"][i]}</span></div>
+                    {forecastRows.slice(0, 4).map((row) => <div key={row.skill} className="rounded-2xl border p-3">
+                      <div className="flex justify-between text-sm"><span>{row.skill}</span><span className="text-blue-600">{row.confidence}</span></div>
                     </div>)}
-                    <button className="w-full rounded-2xl border border-blue-300 text-blue-700 py-3">View Detailed Forecast →</button>
+                    <Link href="/admin/demand-forecast" className="block w-full rounded-2xl border border-blue-300 text-blue-700 py-3 text-center">View Detailed Forecast →</Link>
                   </div>
                 </div>
               </div>
@@ -153,11 +133,11 @@ export default function CooperativeDashboard() {
                 <div className="text-xl font-semibold">Workforce Allocation (AI)</div>
                 <div className="text-sm text-slate-500">Recommends optimal worker allocation based on demand, skills and availability.</div>
                 <div className="mt-4 rounded-2xl bg-red-50 border border-red-100 p-4 flex items-center justify-between gap-3">
-                  <div className="text-sm text-red-700">4 additional electricians needed next week to meet expected demand.</div>
-                  <button onClick={() => setAllocModal(true)} className="px-4 py-2 rounded-2xl border border-blue-300 text-blue-700">Optimize Workforce →</button>
+                  <div className="text-sm text-red-700">{workforceRows.find((row) => row.gap > 0)?.recommendation || "No current shortage identified."}</div>
+                  <Link href="/admin/workforce" className="px-4 py-2 rounded-2xl border border-blue-300 text-blue-700">View Allocation →</Link>
                 </div>
                 <div className="mt-4 space-y-3">
-                  {[["Electricians",14,18],["Plumbers",12,14],["Cleaners",20,22],["Carpenters",8,12]].map(([n,a,b]) => <div key={n as string}><div className="flex justify-between text-sm mb-1"><span>{n as string}</span><span>{a as number} / {b as number}</span></div><div className="h-3 rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-blue-500" style={{ width: `${pct(a as number, b as number)}%` }} /></div></div>)}
+                  {workforceRows.length ? workforceRows.slice(0, 4).map((row) => <div key={row.skill}><div className="flex justify-between text-sm mb-1"><span>{row.skill}</span><span>{row.available_workers} / {row.qualified_workers}</span></div><div className="h-3 rounded-full bg-slate-100 overflow-hidden"><div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.round((row.available_workers / Math.max(row.qualified_workers, 1)) * 100)}%` }} /></div><div className="mt-1 text-xs text-slate-500">{row.gap ? `${row.gap} gap` : "Capacity covers forecast"}</div></div>) : <div className="text-sm text-slate-500">No workforce data available.</div>}
                 </div>
               </div>
             </section>
@@ -171,11 +151,9 @@ export default function CooperativeDashboard() {
               </div>
               <div className="rounded-[28px] border bg-white p-5 xl:col-span-1">
                 <div className="flex justify-between items-center"><div className="text-xl font-semibold">Cooperative Revenue</div><button className="text-blue-600 text-sm">View Details</button></div>
-                <div className="mt-3 text-4xl font-semibold">₹84,500</div>
-                <div className="text-emerald-600 text-sm mt-1">↑ 21% from last month</div>
-                <div className="mt-4 flex gap-2"><select value={revPeriod} onChange={(e) => setRevPeriod(e.target.value)} className="ml-auto rounded-xl border px-3 py-2 text-sm"><option>This Month</option><option>Last Quarter</option></select></div>
-                <div className="mt-4 h-28 flex items-end gap-2">{bars.map((h, i) => <div key={i} className="flex-1 rounded-t-lg bg-blue-300" style={{ height: `${h}px` }}><div className="h-full rounded-t-lg bg-blue-500/70" style={{ height: `${revenue[i]}px` }} /></div>)}</div>
-                <div className="mt-4 space-y-2 text-sm">{[["Platform Commission","₹12,300","14.6%"],["Cooperative Share","₹56,800","67.3%"],["Welfare & Training Fund","₹10,200","12.1%"],["Other","₹5,200","6.0%"]].map(([a,b,c]) => <div key={a} className="flex justify-between border-b last:border-0 pb-2"><span>{a}</span><span className="font-medium">{b} <span className="text-slate-400">{c}</span></span></div>)}</div>
+                <div className="mt-3 text-4xl font-semibold">{overview ? `₹${overview.cooperative_revenue.toLocaleString("en-IN")}` : "Loading..."}</div>
+                <div className="text-slate-500 text-sm mt-1">Platform commission recorded from jobs</div>
+                <Link href="/admin/revenue" className="mt-5 inline-block rounded-xl border border-blue-300 px-4 py-2 text-sm text-blue-700">View Revenue Details →</Link>
               </div>
               <div className="space-y-4 xl:col-span-1">
                 <div className="rounded-[28px] border bg-white p-5">
@@ -198,8 +176,6 @@ export default function CooperativeDashboard() {
       </div>
 
       {memberModal && <Modal title="Add New Member" onClose={() => setMemberModal(false)}><div className="space-y-3"><input className="w-full rounded-xl border px-3 py-2" placeholder="Full name" /><input className="w-full rounded-xl border px-3 py-2" placeholder="Phone" /><button onClick={() => setMemberModal(false)} className="w-full rounded-xl bg-blue-600 text-white py-3">Create member</button></div></Modal>}
-      {allocModal && <Modal title="Optimize Workforce" onClose={() => setAllocModal(false)}><p className="text-sm text-slate-600">AI recommendation: shift 4 electricians, 2 plumbers, and 1 carpenter to the next week demand pool.</p><div className="mt-4 flex gap-3"><button className="flex-1 rounded-xl bg-blue-600 text-white py-2" onClick={() => setAllocModal(false)}>Apply</button><button className="flex-1 rounded-xl border py-2" onClick={() => setAllocModal(false)}>Cancel</button></div></Modal>}
-
       {profile && <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setProfile(false)}><div className="absolute right-6 top-20 w-52 rounded-2xl border bg-white p-2 shadow-xl" onClick={(e) => e.stopPropagation()}><button className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50">Profile</button><button className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50">Settings</button><button onClick={logout} className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-red-600">Logout</button></div></div>}
     </div>
   );
