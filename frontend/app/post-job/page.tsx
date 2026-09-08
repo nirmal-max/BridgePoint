@@ -30,6 +30,8 @@ export default function PostJobPage() {
 
   useEffect(() => {
     if (!user) router.replace("/signin?role=customer&next=%2Fpost-job");
+    else if (user.is_admin || user.roles?.includes("cooperative")) router.replace("/admin");
+    else if (user.roles?.includes("labor") || user.role === "labor" || user.labor_category) router.replace("/worker");
   }, [router, user]);
 
   const update = (key: string, value: string) =>
