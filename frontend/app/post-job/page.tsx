@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { getActiveWorkspaceRole, useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { WORK_DESCRIPTIONS, JOB_CATEGORIES, TIME_SPANS } from "@/lib/types";
 
@@ -30,8 +30,8 @@ export default function PostJobPage() {
 
   useEffect(() => {
     if (!user) router.replace("/signin?role=customer&next=%2Fpost-job");
-    else if (user.is_admin || user.roles?.includes("cooperative")) router.replace("/admin");
-    else if (user.roles?.includes("labor") || user.role === "labor" || user.labor_category) router.replace("/worker");
+    else if (getActiveWorkspaceRole() !== "customer" && (user.is_admin || user.roles?.includes("cooperative"))) router.replace("/admin");
+    else if (getActiveWorkspaceRole() !== "customer" && (user.roles?.includes("labor") || user.role === "labor" || user.labor_category)) router.replace("/worker");
   }, [router, user]);
 
   const update = (key: string, value: string) =>

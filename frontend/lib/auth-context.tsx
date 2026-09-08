@@ -30,6 +30,18 @@ interface AuthContextType {
   logout: () => void;
 }
 
+export type WorkspaceRole = "customer" | "worker" | "cooperative";
+
+export function getActiveWorkspaceRole(): WorkspaceRole | null {
+  if (typeof window === "undefined") return null;
+  const role = sessionStorage.getItem("bp_workspace_role");
+  return role === "customer" || role === "worker" || role === "cooperative" ? role : null;
+}
+
+export function setActiveWorkspaceRole(role: WorkspaceRole) {
+  if (typeof window !== "undefined") sessionStorage.setItem("bp_workspace_role", role);
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function readStoredUser(): User | null {
@@ -70,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("bp_token");
     localStorage.removeItem("bp_user");
     localStorage.removeItem("bp_active_role"); // Clean up legacy key
+    sessionStorage.removeItem("bp_workspace_role");
     setToken(null);
     setUser(null);
     setLoading(false);

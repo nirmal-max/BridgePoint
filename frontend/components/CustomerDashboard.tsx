@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { getActiveWorkspaceRole, useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import type { Job } from "@/lib/types";
 
@@ -13,7 +13,7 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
-  useEffect(() => { if (!user) return; if (user.is_admin || user.roles?.includes("cooperative") || user.roles?.includes("labor") || user.role === "labor" || user.labor_category) { router.replace(user.is_admin || user.roles?.includes("cooperative") ? "/admin" : "/worker"); return; } api.getMyJobs().then((result) => setJobs(result.jobs)).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load your requests.")).finally(() => setLoading(false)); }, [router, user]);
+  useEffect(() => { if (!user) return; const customerWorkspace = getActiveWorkspaceRole() === "customer"; if (!customerWorkspace && (user.is_admin || user.roles?.includes("cooperative") || user.roles?.includes("labor") || user.role === "labor" || user.labor_category)) { router.replace(user.is_admin || user.roles?.includes("cooperative") ? "/admin" : "/worker"); return; } api.getMyJobs().then((result) => setJobs(result.jobs)).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load your requests.")).finally(() => setLoading(false)); }, [router, user]);
   const activeJobs = jobs.filter((job) => !["payment_completed", "payout_released", "paid"].includes(job.status));
   const total = jobs.reduce((sum, job) => sum + (job.employer_total || job.budget || 0), 0);
   if (authLoading || !user) return <div className="grid min-h-screen place-items-center bg-[#f3f8ff] text-slate-500">Checking customer access...</div>;
