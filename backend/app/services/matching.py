@@ -9,6 +9,7 @@ from app.models.feature import Certification, WorkerAvailability, WorkerLocation
 from app.models.job import Job
 from app.models.review import Review
 from app.models.user import User, UserRole
+from app.services.trust import calculate_trust_score
 
 SKILL_TAXONOMY = {
     "electrician": {"electrician", "electrical", "electrical repair", "electric wiring", "wiring"},
@@ -109,7 +110,9 @@ def score_worker(worker: User, job: Job, db: Session) -> dict | None:
     recent_jobs = db.query(Job).filter(Job.allotted_labor_id == worker.id).count()
     workload_score = max(0.0, 1 - min(recent_jobs / 10.0, 1.0))
     fairness_score = workload_score
-    score = skill_score * 0.30 + distance_score * 0.20 + 1.0 * 0.15 + verified_certification * 0.10 + rating_score * 0.10 + reliability_score * 0.05 + workload_score * 0.05 + fairness_score * 0.05
+    trust = calculate_trust_score(worker.id, db)
+    trust_score = trust["trust_score"] / 100
+    score = skill_score * 0.30 + distance_score * 0.20 + 1.0 * 0.10 + verified_certification * 0.10 + rating_score * 0.10 + reliability_score * 0.05 + workload_score * 0.05 + fairness_score * 0.05 + trust_score * 0.05
     return {
         "worker_id": worker.id,
         "name": worker.full_name,
@@ -123,6 +126,9 @@ def score_worker(worker: User, job: Job, db: Session) -> dict | None:
         "reliability_score": round(reliability_score, 3),
         "workload_score": round(workload_score, 3),
         "fairness_score": round(fairness_score, 3),
+        "trust_score": trust["trust_score"],
+        "trust_confidence": trust["confidence"],
+        "trust_evidence_count": trust["evidence_count"],
     }
 
 

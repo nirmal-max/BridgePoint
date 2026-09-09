@@ -19,4 +19,6 @@ def calculate_trust_score(worker_id: int, db: Session) -> dict:
     cancellation_score = 1 - len(cancelled) / len(assigned) if assigned else 1.0
     certification_score = 1.0 if verified else 0.5
     score = completion_score * 0.35 + rating_score * 0.30 + cancellation_score * 0.20 + certification_score * 0.15
-    return {"worker_id": worker_id, "trust_score": round(score * 100, 1), "completed_jobs": len(completed), "assigned_jobs": len(assigned), "average_rating": round(sum(ratings) / len(ratings), 2) if ratings else None, "verified_certifications": verified, "completion_rate": round(completion_score * 100, 1), "cancellation_rate": round((len(cancelled) / len(assigned)) * 100, 1) if assigned else 0, "method": "BridgePoint jobs, reviews, cancellations, and verified certifications"}
+    evidence_count = len(assigned) + len(ratings) + verified
+    confidence = "high" if evidence_count >= 10 else "medium" if evidence_count else "low"
+    return {"worker_id": worker_id, "trust_score": round(score * 100, 1), "confidence": confidence, "evidence_count": evidence_count, "completed_jobs": len(completed), "assigned_jobs": len(assigned), "average_rating": round(sum(ratings) / len(ratings), 2) if ratings else None, "verified_certifications": verified, "completion_rate": round(completion_score * 100, 1), "cancellation_rate": round((len(cancelled) / len(assigned)) * 100, 1) if assigned else 0, "method": "BridgePoint jobs, reviews, cancellations, and verified certifications"}
