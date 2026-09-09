@@ -17,7 +17,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.job import Job, JobCategory, LocationType, TimeSpan, OrganizationType
 from app.models.status_transition import StatusTransition
-from app.models.feature import JobLocation, Notification
+from app.models.feature import JobLocation, Notification, WorkerAvailability
 from app.schemas.job import JobCreate, JobResponse, JobListResponse, JobStatusUpdate
 from app.services.commission import calculate_commission
 from app.services.matching import rank_workers
@@ -118,6 +118,15 @@ def create_job(
         changed_by_user_id=current_user.id,
     )
     db.add(transition)
+    for worker in db.query(User).filter(User.city == job.city).all():
+        try:
+            worker_roles = json.loads(worker.roles or "[]")
+        except (TypeError, json.JSONDecodeError):
+            worker_roles = []
+        if worker.id != job.employer_id and ("labor" in worker_roles or worker.labor_category):
+            availability = db.query(WorkerAvailability).filter_by(worker_id=worker.id).first()
+            if availability is None or availability.is_available:
+                db.add(Notification(user_id=worker.id, kind="job_posted", title="New job in your city", body=f"{job.title} is available in {job.city}.", destination=f"/jobs/{job.id}"))
     db.commit()
 
     return _job_to_response(job, current_user)

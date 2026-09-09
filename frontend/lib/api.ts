@@ -378,6 +378,7 @@ class ApiClient {
   getCertifications() { return this.request<import("./types").Certification[]>("/api/workers/me/certifications"); }
   addCertification(data: { name: string; issuing_organization: string; issue_date: string; expiry_date?: string; credential_id?: string }) { return this.request<import("./types").Certification>("/api/workers/me/certifications", { method: "POST", body: JSON.stringify(data) }); }
   verifyCertification(certificationId: number) { return this.request<import("./types").Certification>(`/api/certifications/${certificationId}/verify`, { method: "POST" }); }
+  getCertificationQueue() { return this.request<import("./types").CertificationReview[]>("/api/cooperative/certifications"); }
   getWelfare() { return this.request<import("./types").WelfareRecord[]>("/api/workers/me/welfare"); }
   saveWelfare(data: { support_type: string; status: string; eligibility?: string; notes?: string }) { return this.request<import("./types").WelfareRecord>("/api/workers/me/welfare", { method: "POST", body: JSON.stringify(data) }); }
   getInsurance() { return this.request<import("./types").InsurancePolicy[]>("/api/workers/me/insurance"); }

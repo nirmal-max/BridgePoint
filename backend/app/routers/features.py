@@ -142,6 +142,12 @@ def verify_certification(certification_id: int, db: Session = Depends(get_db), c
     return certification_payload(item)
 
 
+@router.get("/api/cooperative/certifications")
+def list_certification_queue(db: Session = Depends(get_db), current_user: User = Depends(require_cooperative)):
+    rows = db.query(Certification, User.full_name).join(User, User.id == Certification.worker_id).order_by(Certification.created_at.desc()).all()
+    return [{**certification_payload(item), "worker_name": worker_name} for item, worker_name in rows]
+
+
 @router.get("/api/workers/me/welfare", response_model=list[WelfareResponse])
 def list_welfare(db: Session = Depends(get_db), current_user: User = Depends(require_labor)):
     return db.query(WelfareRecord).filter_by(worker_id=current_user.id).all()
