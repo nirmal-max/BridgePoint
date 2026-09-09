@@ -21,6 +21,8 @@ export interface Federation { id: number; name: string; registration_number?: st
 export interface Society { id: number; federation_id: number; federation_name?: string | null; name: string; registration_number?: string | null; description?: string | null; state?: string | null; district?: string | null; city?: string | null; address?: string | null; status: string; admin_user_id?: number | null; created_at: string; updated_at: string; member_count: number; verified_member_count: number; }
 export interface CooperativeMembership { id: number; user_id: number; worker_name?: string | null; worker_email?: string | null; society_id: number; society_name?: string | null; federation_id?: number | null; membership_number: string; membership_type: string; status: string; joined_at: string; verified_at?: string | null; verified_by?: number | null; }
 export interface WorkerAvailability { worker_id: number; is_available: boolean; updated_at: string; }
+export interface WorkerLocation { worker_id: number; latitude: number; longitude: number; accuracy_m?: number | null; updated_at: string; }
+export interface JobMatch { worker_id: number; name: string; score: number; match_score: number; distance_km?: number | null; available: boolean; rating: number; certified: boolean; skill_score: number; reliability_score: number; workload_score: number; fairness_score: number; }
 export interface Certification { id: number; worker_id: number; name: string; issuing_organization: string; issue_date: string; expiry_date?: string | null; verification_status: "VERIFIED" | "PENDING" | "EXPIRED" | "SELF_DECLARED"; credential_id?: string | null; created_at: string; }
 export interface WelfareRecord { id: number; worker_id: number; support_type: string; status: string; eligibility?: string | null; notes?: string | null; updated_at: string; }
 export interface InsurancePolicy { id: number; worker_id: number; provider: string; policy_name: string; policy_number?: string | null; coverage?: string | null; start_date?: string | null; expiry_date?: string | null; status: string; claim_status: string; created_at: string; }
@@ -45,6 +47,9 @@ export interface Job {
   city: string;
   location_type: string;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_accuracy_m?: number | null;
   date_of_task: string;
   time_span: string;
   organization_type: string;

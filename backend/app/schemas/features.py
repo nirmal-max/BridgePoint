@@ -17,6 +17,19 @@ class AvailabilityResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LocationUpdate(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    accuracy_m: float | None = Field(default=None, ge=0)
+
+
+class LocationResponse(LocationUpdate):
+    worker_id: int
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class CertificationCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     issuing_organization: str = Field(..., min_length=2, max_length=255)

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import {
   Job,
+  JobMatch,
   STATUS_LABELS,
   STATUS_COLORS,
   WORK_DESCRIPTIONS,
@@ -35,6 +36,8 @@ export default function JobDetailPage() {
   const [toast, setToast] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "cash">("upi");
   const [upiRef, setUpiRef] = useState("");
+  const [matches, setMatches] = useState<JobMatch[]>([]);
+  const [matchesLoading, setMatchesLoading] = useState(false);
 
   const jobId = Number(id);
 
@@ -55,6 +58,12 @@ export default function JobDetailPage() {
     };
     if (jobId && user) fetchData();
   }, [jobId, user]);
+
+  useEffect(() => {
+    if (!job || !user || user.id !== job.employer_id || job.status !== "posted") return;
+    setMatchesLoading(true);
+    api.getJobMatches(job.id).then((result) => setMatches(result.matches)).catch(() => setMatches([])).finally(() => setMatchesLoading(false));
+  }, [job, user]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -339,6 +348,13 @@ export default function JobDetailPage() {
                 />
               )}
             </div>
+          </div>
+        )}
+
+        {isOwner && job.status === "posted" && (
+          <div className="card !p-6 mb-4">
+            <h3 className="text-sm font-semibold text-[var(--color-bp-gray-500)] uppercase tracking-wider mb-3">Recommended workers</h3>
+            {matchesLoading ? <p className="text-sm text-[var(--color-bp-gray-500)]">Calculating eligible matches...</p> : matches.length === 0 ? <p className="text-sm text-[var(--color-bp-gray-500)]">No eligible workers match this job yet. Add coordinates and a required skill to improve matching.</p> : <div className="space-y-3">{matches.slice(0, 5).map((match) => <div key={match.worker_id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-4"><div><b>{match.name}</b><p className="text-xs text-slate-500">{match.distance_km == null ? "Distance unavailable" : `${match.distance_km} km`} · Rating {match.rating.toFixed(1)} · {match.certified ? "Verified certification" : "Certification not verified"}</p></div><strong className="text-blue-700">{Math.round(match.match_score)}% match</strong></div>)}</div>}
           </div>
         )}
 

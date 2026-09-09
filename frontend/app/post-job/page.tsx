@@ -13,6 +13,8 @@ export default function PostJobPage() {
   const [error, setError] = useState("");
   const [customWorkType, setCustomWorkType] = useState("");
   const [workTypeError, setWorkTypeError] = useState("");
+  const [jobLocation, setJobLocation] = useState<{ latitude: number; longitude: number; accuracy_m?: number }>();
+  const [locationError, setLocationError] = useState("");
   const [form, setForm] = useState({
     title: "",
     category: "household",
@@ -81,6 +83,9 @@ export default function PostJobPage() {
         work_description: resolvedWorkDesc,
         budget: parseFloat(form.budget),
         date_of_task: new Date(form.date_of_task).toISOString(),
+        latitude: jobLocation?.latitude,
+        longitude: jobLocation?.longitude,
+        location_accuracy_m: jobLocation?.accuracy_m,
       });
       router.push(`/jobs/${job.id}`);
     } catch (err: unknown) {
@@ -262,6 +267,9 @@ export default function PostJobPage() {
                   onChange={(e) => update("address", e.target.value)}
                   required
                 />
+                <button type="button" onClick={() => { if (!navigator.geolocation) { setLocationError("Location is not supported by this browser."); return; } navigator.geolocation.getCurrentPosition((position) => { setJobLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy_m: position.coords.accuracy }); setLocationError(""); }, (geoError) => setLocationError(geoError.message || "Location permission was not granted."), { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }); }} className="mt-3 rounded-xl border border-blue-300 px-4 py-2 text-sm font-medium text-blue-700">{jobLocation ? "Update coordinates from device" : "Use my current location (optional)"}</button>
+                {jobLocation && <p className="mt-2 text-xs text-emerald-700">Coordinates attached: {jobLocation.latitude.toFixed(4)}, {jobLocation.longitude.toFixed(4)}</p>}
+                {locationError && <p className="mt-2 text-xs text-red-600">{locationError}</p>}
               </div>
             )}
 

@@ -112,6 +112,10 @@ class ApiClient {
     return this.request<import("./types").Job>(`/api/jobs/${id}`);
   }
 
+  getJobMatches(jobId: number) {
+    return this.request<{ job_id: number; matches: import("./types").JobMatch[] }>(`/api/jobs/${jobId}/matches`);
+  }
+
   updateJobStatus(jobId: number, status: string) {
     return this.request<import("./types").Job>(`/api/jobs/${jobId}/status`, {
       method: "PATCH",
@@ -369,8 +373,11 @@ class ApiClient {
 
   getAvailability() { return this.request<import("./types").WorkerAvailability>("/api/workers/me/availability"); }
   updateAvailability(isAvailable: boolean) { return this.request<import("./types").WorkerAvailability>("/api/workers/me/availability", { method: "PATCH", body: JSON.stringify({ is_available: isAvailable }) }); }
+  getWorkerLocation() { return this.request<import("./types").WorkerLocation>("/api/workers/me/location"); }
+  updateWorkerLocation(data: { latitude: number; longitude: number; accuracy_m?: number }) { return this.request<import("./types").WorkerLocation>("/api/workers/me/location", { method: "PATCH", body: JSON.stringify(data) }); }
   getCertifications() { return this.request<import("./types").Certification[]>("/api/workers/me/certifications"); }
   addCertification(data: { name: string; issuing_organization: string; issue_date: string; expiry_date?: string; credential_id?: string }) { return this.request<import("./types").Certification>("/api/workers/me/certifications", { method: "POST", body: JSON.stringify(data) }); }
+  verifyCertification(certificationId: number) { return this.request<import("./types").Certification>(`/api/certifications/${certificationId}/verify`, { method: "POST" }); }
   getWelfare() { return this.request<import("./types").WelfareRecord[]>("/api/workers/me/welfare"); }
   saveWelfare(data: { support_type: string; status: string; eligibility?: string; notes?: string }) { return this.request<import("./types").WelfareRecord>("/api/workers/me/welfare", { method: "POST", body: JSON.stringify(data) }); }
   getInsurance() { return this.request<import("./types").InsurancePolicy[]>("/api/workers/me/insurance"); }

@@ -19,6 +19,9 @@ class JobCreate(BaseModel):
     city: str = Field(default="Chennai", max_length=100)
     location_type: str = Field(..., pattern=r"^(online|offline)$")
     address: Optional[str] = None
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
+    location_accuracy_m: Optional[float] = Field(default=None, ge=0)
     date_of_task: datetime
     time_span: str = Field(..., pattern=r"^(few_hours|single_day|week)$")
     organization_type: str = Field(..., pattern=r"^(individual|organization)$")
@@ -48,6 +51,9 @@ class JobResponse(BaseModel):
     city: str
     location_type: str
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    location_accuracy_m: Optional[float] = None
     date_of_task: datetime
     time_span: str
     organization_type: str

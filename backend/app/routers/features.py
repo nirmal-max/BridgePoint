@@ -9,17 +9,17 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.feature import Certification, EmergencyRequest, InsurancePolicy, Invoice, Notification, WelfareRecord, WorkerAvailability
+from app.models.feature import Certification, EmergencyRequest, InsurancePolicy, Invoice, JobLocation, Notification, WelfareRecord, WorkerAvailability, WorkerLocation
 from app.models.job import Job
 from app.models.user import User
 from app.models.commission import CommissionLedger
 from app.schemas.features import (
     AvailabilityResponse, AvailabilityUpdate, CertificationCreate, CertificationResponse,
     EmergencyCreate, EmergencyResponse, EmergencyStatusUpdate, InsuranceCreate, InsuranceResponse,
-    InvoiceResponse, NotificationResponse, WelfareResponse, WelfareUpdate,
+    InvoiceResponse, LocationResponse, LocationUpdate, NotificationResponse, WelfareResponse, WelfareUpdate,
 )
 from app.services.websocket_manager import manager
-from app.utils.deps import get_current_user, require_labor
+from app.utils.deps import get_current_user, require_cooperative, require_labor
 
 router = APIRouter(tags=["Feature Layer"])
 
@@ -67,6 +67,30 @@ def update_availability(payload: AvailabilityUpdate, db: Session = Depends(get_d
     return item
 
 
+@router.get("/api/workers/me/location", response_model=LocationResponse)
+def get_worker_location(db: Session = Depends(get_db), current_user: User = Depends(require_labor)):
+    item = db.query(WorkerLocation).filter_by(worker_id=current_user.id).first()
+    if item is None:
+        raise HTTPException(404, "Worker location has not been set")
+    return item
+
+
+@router.patch("/api/workers/me/location", response_model=LocationResponse)
+def update_worker_location(payload: LocationUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_labor)):
+    item = db.query(WorkerLocation).filter_by(worker_id=current_user.id).first()
+    now = datetime.now(timezone.utc)
+    if item is None:
+        item = WorkerLocation(worker_id=current_user.id, **payload.model_dump(), updated_at=now)
+        db.add(item)
+    else:
+        for key, value in payload.model_dump().items():
+            setattr(item, key, value)
+        item.updated_at = now
+    db.commit()
+    db.refresh(item)
+    return item
+
+
 @router.get("/api/workers/{worker_id}/availability", response_model=AvailabilityResponse)
 def get_public_availability(worker_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     worker = db.query(User).filter(User.id == worker_id).first()
@@ -101,6 +125,18 @@ def add_certification(payload: CertificationCreate, db: Session = Depends(get_db
         raise HTTPException(422, "Expiry date cannot be before issue date")
     item = Certification(worker_id=current_user.id, verification_status="SELF_DECLARED", **payload.model_dump())
     db.add(item)
+    db.commit()
+    db.refresh(item)
+    return certification_payload(item)
+
+
+@router.post("/api/certifications/{certification_id}/verify", response_model=CertificationResponse)
+def verify_certification(certification_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_cooperative)):
+    item = db.query(Certification).filter(Certification.id == certification_id).first()
+    if not item:
+        raise HTTPException(404, "Certification not found")
+    item.verification_status = "VERIFIED"
+    item.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(item)
     return certification_payload(item)

@@ -1,78 +1,146 @@
-"""
-Bridge Point — Matching Service
-Matches jobs to labors based on skill overlap.
-"""
+"""Deterministic, explainable worker matching for BridgePoint jobs."""
 
 import json
+from math import atan2, cos, radians, sin, sqrt
+
 from sqlalchemy.orm import Session
 
-from app.models.user import User, UserRole
+from app.models.feature import Certification, WorkerAvailability, WorkerLocation
 from app.models.job import Job
-from app.models.feature import WorkerAvailability
+from app.models.review import Review
+from app.models.user import User, UserRole
+
+SKILL_TAXONOMY = {
+    "electrician": {"electrician", "electrical", "electrical repair", "electric wiring", "wiring"},
+    "plumber": {"plumber", "plumbing", "pipe fitting", "pipe repair", "water pipe"},
+    "carpenter": {"carpenter", "carpentry", "woodwork", "furniture repair"},
+    "painter": {"painter", "painting", "wall painting"},
+    "cleaner": {"cleaner", "cleaning", "house cleaning", "deep cleaning"},
+    "driver": {"driver", "driving", "delivery rider", "delivery"},
+    "caregiver": {"caregiver", "care work", "elder care", "child care"},
+}
+
+
+def _normalise(value: str | None) -> str:
+    return " ".join((value or "").lower().replace("_", " ").split())
+
+
+def _skills(user: User) -> list[str]:
+    try:
+        values = json.loads(user.skills or "[]")
+    except (TypeError, json.JSONDecodeError):
+        values = []
+    return [_normalise(str(value)) for value in values]
+
+
+def _roles(user: User) -> list[str]:
+    try:
+        return json.loads(user.roles or "[]")
+    except (TypeError, json.JSONDecodeError):
+        return []
+
+
+def calculate_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Return great-circle distance without requiring a GIS database extension."""
+    radius_km = 6371.0
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    value = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    return radius_km * (2 * atan2(sqrt(value), sqrt(max(0.0, 1 - value))))
+
+
+def _skill_score(user: User, job: Job) -> float:
+    requested = _normalise(job.required_skill or str(job.work_description))
+    if not requested:
+        return 0.0
+    requested_group = next((group for group, aliases in SKILL_TAXONOMY.items() if requested in aliases or group in requested), None)
+    best = 0.0
+    for skill in _skills(user):
+        if skill == requested:
+            best = max(best, 1.0)
+        elif requested_group and (skill == requested_group or skill in SKILL_TAXONOMY[requested_group]):
+            best = max(best, 0.8)
+        elif requested_group and any(skill in aliases or aliases.intersection({skill}) for aliases in SKILL_TAXONOMY.values()):
+            best = max(best, 0.5)
+    return best
+
+
+def _is_labor(user: User) -> bool:
+    return UserRole.LABOR.value in _roles(user) or user.labor_category is not None
+
+
+def _rating_score(user: User, db: Session) -> float:
+    ratings = [row[0] for row in db.query(Review.rating).filter(Review.reviewee_id == user.id).all()]
+    return (sum(ratings) / len(ratings) / 5.0) if ratings else 0.5
+
+
+def _reliability_score(user: User, db: Session) -> float:
+    total = db.query(Job).filter(Job.allotted_labor_id == user.id).count()
+    completed = db.query(Job).filter(Job.allotted_labor_id == user.id, Job.status.in_(["work_completed", "payment_completed", "payout_released"])).count()
+    return completed / total if total else 0.5
+
+
+def score_worker(worker: User, job: Job, db: Session) -> dict | None:
+    if not _is_labor(worker):
+        return None
+    availability = db.query(WorkerAvailability).filter_by(worker_id=worker.id).first()
+    if availability is not None and not availability.is_available:
+        return None
+    skill_score = _skill_score(worker, job)
+    if skill_score <= 0:
+        return None
+
+    location = db.query(WorkerLocation).filter_by(worker_id=worker.id).first()
+    distance_km = None
+    radius_km = 10.0
+    distance_score = 0.5
+    if job.location and location:
+        distance_km = calculate_distance_km(location.latitude, location.longitude, job.location.latitude, job.location.longitude)
+        if distance_km > radius_km:
+            return None
+        distance_score = max(0.0, 1 - distance_km / max(radius_km, 0.1))
+    elif job.location:
+        return None
+
+    required = _normalise(job.required_skill)
+    verified_certification = 1.0 if not required else (1.0 if db.query(Certification).filter(Certification.worker_id == worker.id, Certification.verification_status == "VERIFIED").count() else 0.0)
+    rating_score = _rating_score(worker, db)
+    reliability_score = _reliability_score(worker, db)
+    recent_jobs = db.query(Job).filter(Job.allotted_labor_id == worker.id).count()
+    workload_score = max(0.0, 1 - min(recent_jobs / 10.0, 1.0))
+    fairness_score = workload_score
+    score = skill_score * 0.30 + distance_score * 0.20 + 1.0 * 0.15 + verified_certification * 0.10 + rating_score * 0.10 + reliability_score * 0.05 + workload_score * 0.05 + fairness_score * 0.05
+    return {
+        "worker_id": worker.id,
+        "name": worker.full_name,
+        "score": round(score, 4),
+        "match_score": round(score * 100, 1),
+        "distance_km": round(distance_km, 2) if distance_km is not None else None,
+        "available": True,
+        "rating": round(rating_score * 5, 2),
+        "certified": verified_certification == 1.0,
+        "skill_score": round(skill_score, 3),
+        "reliability_score": round(reliability_score, 3),
+        "workload_score": round(workload_score, 3),
+        "fairness_score": round(fairness_score, 3),
+    }
+
+
+def rank_workers(job: Job, db: Session) -> list[dict]:
+    workers = db.query(User).all()
+    ranked = [result for worker in workers if (result := score_worker(worker, job, db)) is not None]
+    return sorted(ranked, key=lambda item: item["score"], reverse=True)
 
 
 def find_matching_labors(job: Job, db: Session) -> list[User]:
-    """
-    Find labors whose skills match the job's work_description.
-    Returns a list of matching labor users.
-    """
-    work_desc = str(job.work_description)
-
-    labors = db.query(User).all()
-
-    matching = []
-    for labor in labors:
-        try:
-            roles = json.loads(labor.roles or "[]")
-        except (json.JSONDecodeError, TypeError):
-            roles = []
-        if UserRole.LABOR.value not in roles and not labor.labor_category:
-            continue
-        availability = db.query(WorkerAvailability).filter_by(worker_id=labor.id).first()
-        if availability is not None and not availability.is_available:
-            continue
-        if not labor.skills:
-            continue
-        try:
-            skills = json.loads(labor.skills)
-        except (json.JSONDecodeError, TypeError):
-            continue
-
-        # Normalize for comparison
-        normalized_skills = [s.lower().strip().replace(" ", "_") for s in skills]
-
-        if work_desc.lower() in normalized_skills:
-            matching.append(labor)
-
-    return matching
+    ranked_ids = [item["worker_id"] for item in rank_workers(job, db)]
+    if not ranked_ids:
+        return []
+    workers = {worker.id: worker for worker in db.query(User).filter(User.id.in_(ranked_ids)).all()}
+    return [workers[worker_id] for worker_id in ranked_ids]
 
 
 def find_matching_jobs(labor: User, db: Session) -> list[Job]:
-    """
-    Find jobs that match a labor's skills.
-    Only returns jobs in 'posted' or 'waiting' status.
-    """
-    if not labor.skills:
+    if not _is_labor(labor):
         return []
-
-    try:
-        skills = json.loads(labor.skills)
-    except (json.JSONDecodeError, TypeError):
-        return []
-
-    normalized_skills = [s.lower().strip().replace(" ", "_") for s in skills]
-
-    # Get open jobs
-    jobs = (
-        db.query(Job)
-        .filter(Job.status.in_(["posted", "waiting"]))
-        .all()
-    )
-
-    matching = []
-    for job in jobs:
-        work_desc = str(job.work_description)
-        if work_desc.lower() in normalized_skills:
-            matching.append(job)
-
-    return matching
+    return [job for job in db.query(Job).filter(Job.status.in_(["posted", "waiting"])).all() if score_worker(labor, job, db)]

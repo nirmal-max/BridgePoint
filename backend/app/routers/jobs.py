@@ -17,9 +17,10 @@ from app.database import get_db
 from app.models.user import User
 from app.models.job import Job, JobCategory, LocationType, TimeSpan, OrganizationType
 from app.models.status_transition import StatusTransition
-from app.models.feature import Notification
+from app.models.feature import JobLocation, Notification
 from app.schemas.job import JobCreate, JobResponse, JobListResponse, JobStatusUpdate
 from app.services.commission import calculate_commission
+from app.services.matching import rank_workers
 from app.services.state_machine import (
     JobStatus, validate_transition,
     FEED_VISIBLE_STATUSES, ACTIVE_WORK_STATUSES, HISTORY_STATUSES,
@@ -104,6 +105,11 @@ def create_job(
     db.commit()
     db.refresh(job)
 
+    if payload.latitude is not None and payload.longitude is not None:
+        db.add(JobLocation(job_id=job.id, latitude=payload.latitude, longitude=payload.longitude, accuracy_m=payload.location_accuracy_m))
+        db.commit()
+        db.refresh(job)
+
     # Log initial transition
     transition = StatusTransition(
         job_id=job.id,
@@ -112,13 +118,6 @@ def create_job(
         changed_by_user_id=current_user.id,
     )
     db.add(transition)
-    db.add(Notification(
-        user_id=job.employer_id,
-        kind="assignment",
-        title="Worker accepted your job",
-        body=f"{current_user.full_name} accepted {job.title}.",
-        destination=f"/jobs/{job.id}",
-    ))
     db.commit()
 
     return _job_to_response(job, current_user)
@@ -236,6 +235,17 @@ def get_labor_history(
 
 
 # ─── Dynamic path routes AFTER static sub-paths ─────────────────────
+
+@router.get("/{job_id}/matches")
+def get_job_matches(job_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_employer)):
+    """Return explainable ranked workers for the employer's own job."""
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if not current_user.is_admin and job.employer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only view matches for your own jobs")
+    return {"job_id": job.id, "matches": rank_workers(job, db)}
+
 
 @router.get("/{job_id}", response_model=JobResponse)
 def get_job(job_id: int, db: Session = Depends(get_db)):
@@ -405,6 +415,10 @@ def repost_job(
     db.add(new_job)
     db.commit()
     db.refresh(new_job)
+    if original.location:
+        db.add(JobLocation(job_id=new_job.id, latitude=original.location.latitude, longitude=original.location.longitude, accuracy_m=original.location.accuracy_m))
+        db.commit()
+        db.refresh(new_job)
 
     transition = StatusTransition(
         job_id=new_job.id,
@@ -485,6 +499,13 @@ async def accept_task(
         changed_by_user_id=current_user.id,
     )
     db.add(transition)
+    db.add(Notification(
+        user_id=job.employer_id,
+        kind="assignment",
+        title="Worker accepted your job",
+        body=f"{current_user.full_name} accepted {job.title}.",
+        destination=f"/jobs/{job.id}",
+    ))
     db.commit()
 
     # Expire ORM cache and re-read from DB to get fresh data after raw SQL
@@ -520,6 +541,9 @@ def _job_to_response(job: Job, current_user: User | None = None) -> JobResponse:
         city=job.city,
         location_type=job.location_type.value if hasattr(job.location_type, 'value') else str(job.location_type),
         address=job.address,
+        latitude=job.location.latitude if job.location else None,
+        longitude=job.location.longitude if job.location else None,
+        location_accuracy_m=job.location.accuracy_m if job.location else None,
         date_of_task=job.date_of_task,
         time_span=job.time_span.value if hasattr(job.time_span, 'value') else str(job.time_span),
         organization_type=job.organization_type.value if hasattr(job.organization_type, 'value') else str(job.organization_type),

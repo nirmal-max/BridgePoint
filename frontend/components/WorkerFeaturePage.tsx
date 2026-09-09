@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
-import type { Certification, EmergencyRequest, Job, Notification, WorkerAvailability, WelfareRecord, InsurancePolicy } from "@/lib/types";
+import type { Certification, EmergencyRequest, Job, Notification, WorkerAvailability, WorkerLocation, WelfareRecord, InsurancePolicy } from "@/lib/types";
 import MessagesWorkspace from "@/components/MessagesWorkspace";
 
 type Section = "available-jobs" | "jobs" | "earnings" | "skill-passport" | "training" | "messages" | "profile" | "settings" | "availability" | "notifications" | "emergency";
@@ -32,6 +32,9 @@ export default function WorkerFeaturePage({ section }: { section: Section }) {
   const [availability, setAvailability] = useState<WorkerAvailability | null>(null);
   const [availabilityError, setAvailabilityError] = useState("");
   const [savingAvailability, setSavingAvailability] = useState(false);
+  const [location, setLocation] = useState<WorkerLocation | null>(null);
+  const [locationError, setLocationError] = useState("");
+  const [savingLocation, setSavingLocation] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/signin?role=worker&next=" + encodeURIComponent("/worker/" + section));
@@ -50,6 +53,11 @@ export default function WorkerFeaturePage({ section }: { section: Section }) {
 
   useEffect(() => {
     if (section !== "availability") return;
+    api.getWorkerLocation().then(setLocation).catch(() => setLocation(null));
+  }, [section]);
+
+  useEffect(() => {
+    if (section !== "availability") return;
     api.getAvailability().then(setAvailability).catch((err: unknown) => setAvailabilityError(err instanceof Error ? err.message : "Unable to load availability."));
   }, [section]);
 
@@ -61,6 +69,17 @@ export default function WorkerFeaturePage({ section }: { section: Section }) {
     finally { setSavingAvailability(false); }
   }
 
+  function captureLocation() {
+    if (!navigator.geolocation) { setLocationError("Location is not supported by this browser."); return; }
+    setSavingLocation(true);
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try { setLocation(await api.updateWorkerLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy_m: position.coords.accuracy })); }
+      catch (err) { setLocationError(err instanceof Error ? err.message : "Unable to save location."); }
+      finally { setSavingLocation(false); }
+    }, (err) => { setLocationError(err.message || "Location permission was not granted."); setSavingLocation(false); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
+  }
+
   const name = mounted ? (user?.full_name || "Worker") : "Worker";
   const title = section === "available-jobs" ? "Available Jobs" : section === "skill-passport" ? "Digital Skill Passport" : section === "training" ? "Training & Welfare" : section === "jobs" ? "My Jobs" : section === "earnings" ? "Earnings" : section === "availability" ? "Worker Availability" : section === "notifications" ? "Notifications" : section === "emergency" ? "Emergency Requests" : section[0].toUpperCase() + section.slice(1);
 
@@ -69,7 +88,7 @@ export default function WorkerFeaturePage({ section }: { section: Section }) {
   }
 
   const renderDataSection = () => {
-    if (section === "availability") return <AvailabilityPanel availability={availability} error={availabilityError} saving={savingAvailability} onChange={saveAvailability} />;
+    if (section === "availability") return <AvailabilityPanel availability={availability} error={availabilityError} saving={savingAvailability} onChange={saveAvailability} location={location} locationError={locationError} savingLocation={savingLocation} onCaptureLocation={captureLocation} />;
     if (section === "notifications") return <NotificationsPanel />;
     if (section === "emergency") return <EmergencyPanel />;
     if (section === "messages") return <MessagesWorkspace role="worker" />;
@@ -100,8 +119,8 @@ export default function WorkerFeaturePage({ section }: { section: Section }) {
   </div></div>;
 }
 
-function AvailabilityPanel({ availability, error, saving, onChange }: { availability: WorkerAvailability | null; error: string; saving: boolean; onChange: (value: boolean) => void }) {
-  return <section className="max-w-xl rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Availability for work</h2><p className="mt-2 text-sm text-slate-500">This status is stored on your worker account and used by matching.</p>{error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}<div className="mt-6 flex items-center justify-between rounded-xl bg-slate-50 p-4"><div><b>{availability?.is_available ? "Available" : "Unavailable"}</b><p className="text-sm text-slate-500">{availability ? "Saved to your account" : "Loading current status"}</p></div><button disabled={saving || !availability} onClick={() => onChange(!availability?.is_available)} className={(availability?.is_available ? "bg-emerald-600" : "bg-slate-400") + " rounded-full px-5 py-3 font-semibold text-white disabled:opacity-50"}>{saving ? "Saving..." : availability?.is_available ? "Set unavailable" : "Set available"}</button></div></section>;
+function AvailabilityPanel({ availability, error, saving, onChange, location, locationError, savingLocation, onCaptureLocation }: { availability: WorkerAvailability | null; error: string; saving: boolean; onChange: (value: boolean) => void; location: WorkerLocation | null; locationError: string; savingLocation: boolean; onCaptureLocation: () => void }) {
+  return <section className="max-w-xl space-y-4"><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Availability for work</h2><p className="mt-2 text-sm text-slate-500">This status is stored on your worker account and used by matching.</p>{error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}<div className="mt-6 flex items-center justify-between rounded-xl bg-slate-50 p-4"><div><b>{availability?.is_available ? "Available" : "Unavailable"}</b><p className="text-sm text-slate-500">{availability ? "Saved to your account" : "Loading current status"}</p></div><button disabled={saving || !availability} onClick={() => onChange(!availability?.is_available)} className={(availability?.is_available ? "bg-emerald-600" : "bg-slate-400") + " rounded-full px-5 py-3 font-semibold text-white disabled:opacity-50"}>{saving ? "Saving..." : availability?.is_available ? "Set unavailable" : "Set available"}</button></div></div><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-lg font-bold">Work location</h2><p className="mt-2 text-sm text-slate-500">Save a precise location to enable nearby matching. BridgePoint stores coordinates, not a live tracking stream.</p>{location && <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Location saved: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}</p>}{locationError && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{locationError}</p>}<button disabled={savingLocation} onClick={onCaptureLocation} className="mt-4 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">{savingLocation ? "Saving location..." : location ? "Update my location" : "Set my location"}</button></div></section>;
 }
 
 function NotificationsPanel() {

@@ -115,6 +115,7 @@ class Job(Base):
     reviews = relationship("Review", back_populates="job")
     commission_ledger = relationship("CommissionLedger", back_populates="job", uselist=False)
     payment = relationship("Payment", back_populates="job", uselist=False)
+    location = relationship("JobLocation", back_populates="job", uselist=False, cascade="all, delete-orphan")
 
     # ─── Composite Indexes ───────────────────────────────
     __table_args__ = (
