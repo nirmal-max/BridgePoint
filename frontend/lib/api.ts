@@ -376,6 +376,7 @@ class ApiClient {
   getWorkerLocation() { return this.request<import("./types").WorkerLocation>("/api/workers/me/location"); }
   updateWorkerLocation(data: { latitude: number; longitude: number; accuracy_m?: number }) { return this.request<import("./types").WorkerLocation>("/api/workers/me/location", { method: "PATCH", body: JSON.stringify(data) }); }
   getCertifications() { return this.request<import("./types").Certification[]>("/api/workers/me/certifications"); }
+  getTrustScore(workerId: number) { return this.request<import("./types").TrustScore>(`/api/workers/${workerId}/trust-score`); }
   addCertification(data: { name: string; issuing_organization: string; issue_date: string; expiry_date?: string; credential_id?: string }) { return this.request<import("./types").Certification>("/api/workers/me/certifications", { method: "POST", body: JSON.stringify(data) }); }
   verifyCertification(certificationId: number) { return this.request<import("./types").Certification>(`/api/certifications/${certificationId}/verify`, { method: "POST" }); }
   getCertificationQueue() { return this.request<import("./types").CertificationReview[]>("/api/cooperative/certifications"); }

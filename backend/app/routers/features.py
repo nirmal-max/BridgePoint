@@ -19,6 +19,7 @@ from app.schemas.features import (
     InvoiceResponse, LocationResponse, LocationUpdate, NotificationResponse, WelfareResponse, WelfareUpdate,
 )
 from app.services.websocket_manager import manager
+from app.services.trust import calculate_trust_score
 from app.utils.deps import get_current_user, require_cooperative, require_labor
 
 router = APIRouter(tags=["Feature Layer"])
@@ -117,6 +118,13 @@ def list_certifications(db: Session = Depends(get_db), current_user: User = Depe
 @router.get("/api/workers/{worker_id}/certifications", response_model=list[CertificationResponse])
 def list_public_certifications(worker_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return [certification_payload(item) for item in db.query(Certification).filter(Certification.worker_id == worker_id, Certification.verification_status == "VERIFIED").all()]
+
+
+@router.get("/api/workers/{worker_id}/trust-score")
+def worker_trust_score(worker_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not db.query(User).filter(User.id == worker_id).first():
+        raise HTTPException(404, "Worker not found")
+    return calculate_trust_score(worker_id, db)
 
 
 @router.post("/api/workers/me/certifications", response_model=CertificationResponse, status_code=201)
