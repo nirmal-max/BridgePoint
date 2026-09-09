@@ -6,8 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
-type Section = "members" | "worker-profile" | "verification" | "demand-forecast" | "workforce" | "revenue" | "analytics" | "jobs" | "training" | "settings";
-const links = [["/admin", "Dashboard"], ["/admin/federation", "Federation"], ["/admin/societies", "Societies"], ["/admin/members", "Members / Workers"], ["/admin/jobs", "Job Management"], ["/admin/worker-profile", "Worker Profile"], ["/admin/verification", "Verification Center"], ["/admin/demand-forecast", "AI Demand Forecast"], ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"], ["/admin/training", "Training & Welfare"], ["/admin/analytics", "Analytics & Reports"], ["/admin/messages", "Messages"], ["/admin/settings", "Settings"]] as const;
+type Section = "members" | "worker-profile" | "verification" | "demand-forecast" | "workforce" | "revenue" | "analytics" | "jobs" | "training" | "settings" | "notifications" | "wage-benchmark";
+const links = [["/admin", "Dashboard"], ["/admin/federation", "Federation"], ["/admin/societies", "Societies"], ["/admin/members", "Members / Workers"], ["/admin/jobs", "Job Management"], ["/admin/worker-profile", "Worker Profile"], ["/admin/verification", "Verification Center"], ["/admin/demand-forecast", "AI Demand Forecast"], ["/admin/workforce", "Workforce Allocation"], ["/admin/revenue", "Earnings & Revenue"], ["/admin/wage-benchmark", "Wage Benchmark"], ["/admin/training", "Training & Welfare"], ["/admin/analytics", "Analytics & Reports"], ["/admin/messages", "Messages"], ["/admin/notifications", "Notifications"], ["/admin/settings", "Settings"]] as const;
 const copy: Record<Section, [string, string, string[]]> = {
   members: ["Members / Workers", "Manage cooperative members and verification progress.", ["Member directory", "Verification status", "Worker skills"]],
   "worker-profile": ["Worker Profile", "Review worker identity, skills, and cooperative membership.", ["Identity status", "Skill certifications", "Insurance status"]],
@@ -19,6 +19,8 @@ const copy: Record<Section, [string, string, string[]]> = {
   jobs: ["Job Management", "Review jobs and operational status from the existing job system.", ["Posted jobs", "Assigned jobs", "Completed jobs"]],
   training: ["Training & Welfare", "Track worker development and clearly separate live data from future provider integrations.", ["Skills", "Training pathways", "Welfare integrations are not connected"]],
   settings: ["Settings", "Review cooperative account and access settings.", ["Account access", "Notifications", "Backend permissions"]],
+  notifications: ["Notifications", "Review persisted cooperative operations notifications.", ["Unread events", "Job updates", "Payment updates"]],
+  "wage-benchmark": ["Wage Benchmark", "Compare recorded BridgePoint job values without inventing market statistics.", ["Average", "Median", "Recorded range"]],
 };
 
 export default function CooperativeFeaturePage({ section }: { section: Section }) {
@@ -30,7 +32,7 @@ export default function CooperativeFeaturePage({ section }: { section: Section }
   const [error, setError] = useState("");
   const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative"));
   useEffect(() => { if (!loading && !user) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); else if (!loading && user && !cooperativeAccess) router.replace("/dashboard"); }, [cooperativeAccess, loading, router, section, user]);
-  useEffect(() => { if (!user) return; const load = section === "members" ? api.getCooperativeMembers() : section === "demand-forecast" ? api.getDemandForecast() : section === "workforce" ? api.getWorkforceAllocation() : section === "analytics" ? api.getCooperativeAnalytics() : api.getCooperativeOverview(); load.then(setData).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load cooperative data.")); }, [section, user]);
+  useEffect(() => { if (!user) return; const load = section === "members" ? api.getCooperativeMembers() : section === "demand-forecast" ? api.getDemandForecast() : section === "workforce" ? api.getWorkforceAllocation() : section === "analytics" ? api.getCooperativeAnalytics() : section === "notifications" ? api.getNotifications() : section === "wage-benchmark" ? api.getWageBenchmark(user.city || undefined) : api.getCooperativeOverview(); load.then(setData).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load cooperative data.")); }, [section, user]);
   if (loading || !cooperativeAccess) return <div className="grid min-h-screen place-items-center bg-[#f3f7fd] text-slate-500">Checking cooperative access...</div>;
   const [title, description, cards] = copy[section];
   const rows = Array.isArray(data) ? data : data && typeof data === "object" ? Object.entries(data as Record<string, unknown>).map(([label, value]) => ({ label, value })) : [];

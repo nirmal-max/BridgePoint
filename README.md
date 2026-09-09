@@ -37,6 +37,25 @@ Organization APIs enforce ownership and membership access on the backend. Worker
 - `POST /api/memberships/{id}/verify`
 - `POST /api/memberships/{id}/suspend`
 
+## Verified feature layer
+
+The worker and customer feature layer uses persisted, authenticated records for availability, certifications, welfare, insurance, invoices, notifications, emergency requests, and wage benchmarks. These endpoints are backed by the existing SQLAlchemy database and enforce object-level authorization:
+
+- Worker availability: GET/PATCH /api/workers/me/availability
+- Certifications: GET/POST /api/workers/me/certifications
+- Welfare: GET/POST /api/workers/me/welfare
+- Insurance: GET/POST /api/workers/me/insurance
+- Invoices: GET /api/invoices/job/{job_id}, created from existing job/payment data
+- Notifications: GET /api/notifications and PATCH /api/notifications/{id}/read
+- Emergency requests: POST /api/emergency, GET /api/emergency/mine, GET /api/emergency/open, POST /api/emergency/{id}/respond, PATCH /api/emergency/{id}/status
+- Wage benchmark: GET /api/wage-benchmark, using recorded BridgePoint jobs only
+
+New tables use the existing SQLAlchemy create_all and safe SQLite schema initialization. No tables are dropped or reset. Welfare and insurance screens show honest empty states until real records exist; no government or external insurance integration is claimed.
+
+## Language and PWA
+
+English, Tamil, and Hindi are available through the shared frontend language provider. The selected language is persisted in localStorage under bp_language. The existing manifest and service worker provide responsive web/PWA behavior; no native mobile application is claimed.
+
 ## Local development
 
 Run the backend from `backend`:

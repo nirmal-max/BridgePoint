@@ -367,6 +367,24 @@ class ApiClient {
     );
   }
 
+  getAvailability() { return this.request<import("./types").WorkerAvailability>("/api/workers/me/availability"); }
+  updateAvailability(isAvailable: boolean) { return this.request<import("./types").WorkerAvailability>("/api/workers/me/availability", { method: "PATCH", body: JSON.stringify({ is_available: isAvailable }) }); }
+  getCertifications() { return this.request<import("./types").Certification[]>("/api/workers/me/certifications"); }
+  addCertification(data: { name: string; issuing_organization: string; issue_date: string; expiry_date?: string; credential_id?: string }) { return this.request<import("./types").Certification>("/api/workers/me/certifications", { method: "POST", body: JSON.stringify(data) }); }
+  getWelfare() { return this.request<import("./types").WelfareRecord[]>("/api/workers/me/welfare"); }
+  saveWelfare(data: { support_type: string; status: string; eligibility?: string; notes?: string }) { return this.request<import("./types").WelfareRecord>("/api/workers/me/welfare", { method: "POST", body: JSON.stringify(data) }); }
+  getInsurance() { return this.request<import("./types").InsurancePolicy[]>("/api/workers/me/insurance"); }
+  addInsurance(data: Record<string, unknown>) { return this.request<import("./types").InsurancePolicy>("/api/workers/me/insurance", { method: "POST", body: JSON.stringify(data) }); }
+  getInvoice(jobId: number) { return this.request<import("./types").Invoice>("/api/invoices/job/" + jobId); }
+  getNotifications() { return this.request<import("./types").Notification[]>("/api/notifications"); }
+  markNotificationRead(id: number) { return this.request<import("./types").Notification>("/api/notifications/" + id + "/read", { method: "PATCH" }); }
+  createEmergency(data: { category: string; urgency: string; description: string; address: string; city: string }) { return this.request<import("./types").EmergencyRequest>("/api/emergency", { method: "POST", body: JSON.stringify(data) }); }
+  getMyEmergencies() { return this.request<import("./types").EmergencyRequest[]>("/api/emergency/mine"); }
+  getOpenEmergencies() { return this.request<import("./types").EmergencyRequest[]>("/api/emergency/open"); }
+  respondToEmergency(id: number) { return this.request<import("./types").EmergencyRequest>("/api/emergency/" + id + "/respond", { method: "POST" }); }
+  updateEmergencyStatus(id: number, status: string) { return this.request<import("./types").EmergencyRequest>("/api/emergency/" + id + "/status", { method: "PATCH", body: JSON.stringify({ status }) }); }
+  getWageBenchmark(city?: string, skill?: string) { const qs = new URLSearchParams(); if (city) qs.set("city", city); if (skill) qs.set("skill", skill); return this.request<Record<string, unknown>>("/api/wage-benchmark" + (qs.toString() ? "?" + qs : "")); }
+
   /* ─── Cooperative reporting ─── */
   getCooperativeOverview() { return this.request<{
     members: number; verified_workers: number; active_jobs: number;

@@ -17,6 +17,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.job import Job, JobCategory, LocationType, TimeSpan, OrganizationType
 from app.models.status_transition import StatusTransition
+from app.models.feature import Notification
 from app.schemas.job import JobCreate, JobResponse, JobListResponse, JobStatusUpdate
 from app.services.commission import calculate_commission
 from app.services.state_machine import (
@@ -111,6 +112,13 @@ def create_job(
         changed_by_user_id=current_user.id,
     )
     db.add(transition)
+    db.add(Notification(
+        user_id=job.employer_id,
+        kind="assignment",
+        title="Worker accepted your job",
+        body=f"{current_user.full_name} accepted {job.title}.",
+        destination=f"/jobs/{job.id}",
+    ))
     db.commit()
 
     return _job_to_response(job, current_user)

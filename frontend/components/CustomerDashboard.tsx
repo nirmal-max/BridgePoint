@@ -7,7 +7,7 @@ import { getActiveWorkspaceRole, useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import type { Job } from "@/lib/types";
 
-const links = [["/dashboard", "Dashboard"], ["/find-services", "Find Services"], ["/booking", "Bookings & Tracking"], ["/payment", "Payments"], ["/reviews", "Reviews"], ["/emergency", "Emergency Service"], ["/messages", "Messages"], ["/settings", "Settings"]] as const;
+const links = [["/dashboard", "Dashboard"], ["/find-services", "Find Services"], ["/booking", "Bookings & Tracking"], ["/payment", "Payments"], ["/invoice", "Invoices"], ["/reviews", "Reviews"], ["/emergency", "Emergency Service"], ["/messages", "Messages"], ["/notifications", "Notifications"], ["/settings", "Settings"]] as const;
 
 export default function CustomerDashboard() {
   const { user, logout, loading: authLoading } = useAuth();

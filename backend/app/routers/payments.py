@@ -20,6 +20,7 @@ from app.models.user import User
 from app.models.job import Job
 from app.models.commission import CommissionLedger
 from app.models.status_transition import StatusTransition
+from app.models.feature import Notification
 from app.services.state_machine import JobStatus, validate_transition
 from app.services.commission import calculate_commission
 from app.services.websocket_manager import manager
@@ -114,6 +115,7 @@ def initiate_payment(
     job.payment_method = payload.payment_method
     job.payment_status = "pending"
     job.updated_at = datetime.now(timezone.utc)
+    db.add(Notification(user_id=job.allotted_labor_id, kind="payment", title="Payment started", body=f"Payment was initiated for {job.title}.", destination=f"/payment?job_id={job.id}"))
 
     db.commit()
 
@@ -193,6 +195,8 @@ async def mark_payment_sent(
     ledger = db.query(CommissionLedger).filter(CommissionLedger.job_id == job.id).first()
     if ledger:
         ledger.upi_reference = utr
+    if job.allotted_labor_id:
+        db.add(Notification(user_id=job.allotted_labor_id, kind="payment", title="Payment sent for verification", body=f"The customer marked payment sent for {job.title}.", destination=f"/payment?job_id={job.id}"))
 
     db.commit()
 
@@ -250,6 +254,9 @@ async def verify_payment(
     ledger = db.query(CommissionLedger).filter(CommissionLedger.job_id == job.id).first()
     if ledger:
         ledger.payment_status = "verified"
+    db.add(Notification(user_id=job.employer_id, kind="payment", title="Payment verified", body=f"Payment for {job.title} was verified.", destination=f"/payment?job_id={job.id}"))
+    if job.allotted_labor_id:
+        db.add(Notification(user_id=job.allotted_labor_id, kind="payment", title="Payment verified", body=f"Payment for {job.title} was verified.", destination=f"/payment?job_id={job.id}"))
 
     db.commit()
 
@@ -316,6 +323,8 @@ async def release_payout(
     ledger = db.query(CommissionLedger).filter(CommissionLedger.job_id == job.id).first()
     if ledger:
         ledger.payment_status = "payout_released"
+    if job.allotted_labor_id:
+        db.add(Notification(user_id=job.allotted_labor_id, kind="payment", title="Payout released", body=f"Your payout for {job.title} was released.", destination=f"/worker/earnings"))
 
     db.commit()
 

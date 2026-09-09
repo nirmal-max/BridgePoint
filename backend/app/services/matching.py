@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User, UserRole
 from app.models.job import Job
+from app.models.feature import WorkerAvailability
 
 
 def find_matching_labors(job: Job, db: Session) -> list[User]:
@@ -17,10 +18,19 @@ def find_matching_labors(job: Job, db: Session) -> list[User]:
     """
     work_desc = str(job.work_description)
 
-    labors = db.query(User).filter(User.role == UserRole.LABOR).all()
+    labors = db.query(User).all()
 
     matching = []
     for labor in labors:
+        try:
+            roles = json.loads(labor.roles or "[]")
+        except (json.JSONDecodeError, TypeError):
+            roles = []
+        if UserRole.LABOR.value not in roles and not labor.labor_category:
+            continue
+        availability = db.query(WorkerAvailability).filter_by(worker_id=labor.id).first()
+        if availability is not None and not availability.is_available:
+            continue
         if not labor.skills:
             continue
         try:

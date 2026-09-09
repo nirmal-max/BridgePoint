@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { CallProvider } from "@/lib/call-context";
 import Header from "@/components/Header";
 import CallOverlay from "@/components/CallOverlay";
+import { LanguageProvider, LanguageSwitcher } from "@/lib/i18n";
 
 
 export const metadata: Metadata = {
@@ -41,11 +42,14 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[var(--color-bp-white)]" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
         <AuthProvider>
-          <CallProvider>
-            <Header />
-            <main>{children}</main>
-            <CallOverlay />
-          </CallProvider>
+          <LanguageProvider>
+            <CallProvider>
+              <Header />
+              <div className="fixed right-4 top-3 z-[60]"><LanguageSwitcher /></div>
+              <main>{children}</main>
+              <CallOverlay />
+            </CallProvider>
+          </LanguageProvider>
         </AuthProvider>
 
       </body>

@@ -34,9 +34,10 @@ from app.models.private_request import PrivateRequest
 from app.models.password_reset import PasswordReset
 from app.models.payment import Payment
 from app.models.organization import Federation, Society, CooperativeMembership
+from app.models.feature import WorkerAvailability, Certification, WelfareRecord, InsurancePolicy, Invoice, Notification, EmergencyRequest
 
 # Import routers
-from app.routers import auth, jobs, applications, reviews, favorites, payments, websocket, calls, messages, private_requests, password_reset, cooperative, organizations
+from app.routers import auth, jobs, applications, reviews, favorites, payments, websocket, calls, messages, private_requests, password_reset, cooperative, organizations, features
 
 # ─── Create tables ──────────────────────────────────────
 try:
@@ -81,6 +82,7 @@ app.include_router(messages.router)
 app.include_router(private_requests.router)
 app.include_router(cooperative.router)
 app.include_router(organizations.router)
+app.include_router(features.router)
 
 
 # ─── Health Check ───────────────────────────────────────
