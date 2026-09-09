@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
@@ -24,15 +24,14 @@ const KPIS = [
 export default function CooperativeDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative"));
   useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); else if (!cooperativeAccess) router.replace("/dashboard"); }, [cooperativeAccess, router, user]);
   const [period, setPeriod] = useState("Next 7 Days");
   const [sidebar, setSidebar] = useState(false);
   const [search, setSearch] = useState("");
   const [notify, setNotify] = useState(false);
-  const [msg, setMsg] = useState(false);
   const [profile, setProfile] = useState(false);
-  const [memberModal, setMemberModal] = useState(false);
   const [jobsError, setJobsError] = useState("");
   const [overview, setOverview] = useState<{ members: number; verified_workers: number; active_jobs: number; cooperative_revenue: number } | null>(null);
   const [forecastRows, setForecastRows] = useState<{ skill: string; predicted_jobs: number; confidence: string }[]>([]);
@@ -54,7 +53,7 @@ export default function CooperativeDashboard() {
             </div>
             <nav className="space-y-1 text-sm">
               {filteredNav.map(([href, label]) => (
-                <Link key={href} href={href} onClick={() => setSidebar(false)} className={`block w-full px-4 py-3 rounded-2xl ${href === "/admin" ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-600 hover:bg-slate-50"}`}>
+                <Link key={href} href={href} onClick={() => setSidebar(false)} className={`block w-full px-4 py-3 rounded-2xl ${pathname === href ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-600 hover:bg-slate-50"}`}>
                   {label}
                 </Link>
               ))}
@@ -70,19 +69,19 @@ export default function CooperativeDashboard() {
           <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
             <div className="px-4 md:px-6 py-4 flex items-center gap-3">
               <button className="xl:hidden px-3 py-2 rounded-xl border" onClick={() => setSidebar(v => !v)}>☰</button>
-              <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-sm text-slate-600">Chennai, Tamil Nadu ▾</button>
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-sm text-slate-600">{user?.city || "Cooperative workspace"}</div>
               <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-2xl border bg-white text-slate-400">
                 <span>⌕</span>
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search workers, jobs, reports..." className="w-full outline-none text-slate-700" />
               </div>
-              <button onClick={() => setNotify(v => !v)} className="relative px-3 py-2 rounded-xl border bg-white">🔔<span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-xs rounded-full bg-red-500 text-white">5</span></button>
-              <button onClick={() => setMsg(v => !v)} className="px-3 py-2 rounded-xl border bg-white">💬</button>
+              <button aria-label="Show notifications" onClick={() => setNotify(v => !v)} className="px-3 py-2 rounded-xl border bg-white">🔔</button>
+              <Link aria-label="Open cooperative messages" href="/admin/messages" className="px-3 py-2 rounded-xl border bg-white">💬</Link>
               <button onClick={() => setProfile(v => !v)} className="flex items-center gap-3 px-3 py-2 rounded-2xl border bg-white">
                 <span className="h-10 w-10 rounded-full bg-blue-600 text-white grid place-items-center font-semibold">{(user?.full_name || "CE").split(" ").map(s => s[0]).slice(0,2).join("") || "CE"}</span>
-                <span className="hidden md:block text-left"><div className="text-sm font-medium">{user?.full_name || "Chennai Electrical Workers Cooperative"}</div><div className="text-xs text-slate-500">Admin</div></span>
+                <span className="hidden md:block text-left"><div className="text-sm font-medium">{user?.full_name || "Cooperative workspace"}</div><div className="text-xs text-slate-500">Admin</div></span>
               </button>
             </div>
-            {(notify || msg || profile) && <div className="px-6 pb-4 text-sm text-slate-600">{notify ? "3 new notifications ready." : msg ? "2 unread messages." : "Profile actions available."}</div>}
+            {notify && <div className="px-6 pb-4 text-sm text-slate-600">No live notifications are available for this workspace yet.</div>}
           </header>
 
           <main className="p-4 md:p-6 space-y-4">
@@ -90,12 +89,12 @@ export default function CooperativeDashboard() {
               <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                 <div>
                   <div className="text-4xl md:text-5xl font-semibold">Good morning!</div>
-                  <div className="mt-1 text-2xl md:text-3xl font-semibold text-slate-700">Chennai Electrical Workers Cooperative</div>
+                  <div className="mt-1 text-2xl md:text-3xl font-semibold text-slate-700">Cooperative workspace</div>
                   <p className="mt-2 text-slate-600 max-w-2xl">Manage your workforce, meet community demand, and create better opportunities.</p>
                 </div>
                 <div className="flex gap-3 items-center">
                   <div className="hidden md:block rounded-3xl bg-white/80 border border-slate-200 px-5 py-4 text-blue-700 italic">&quot;Organised workers. Stronger communities.&quot;</div>
-                  <button onClick={() => setMemberModal(true)} className="px-5 py-3 rounded-2xl bg-blue-600 text-white font-medium">+ Add New Member</button>
+                  <Link href="/admin/members" className="px-5 py-3 rounded-2xl bg-blue-600 text-white font-medium">+ Manage Members</Link>
                 </div>
               </div>
             </section>
@@ -149,7 +148,7 @@ export default function CooperativeDashboard() {
                 <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Activity history is not stored as a dedicated feed yet. Use Analytics for verified job totals and status data.</p>
               </div>
               <div className="rounded-[28px] border bg-white p-5 xl:col-span-1">
-                <div className="flex justify-between items-center"><div className="text-xl font-semibold">Cooperative Revenue</div><button className="text-blue-600 text-sm">View Details</button></div>
+                <div className="flex justify-between items-center"><div className="text-xl font-semibold">Cooperative Revenue</div><Link href="/admin/revenue" className="text-blue-600 text-sm">View Details</Link></div>
                 <div className="mt-3 text-4xl font-semibold">{overview ? `₹${overview.cooperative_revenue.toLocaleString("en-IN")}` : "Loading..."}</div>
                 <div className="text-slate-500 text-sm mt-1">Platform commission recorded from jobs</div>
                 <Link href="/admin/revenue" className="mt-5 inline-block rounded-xl border border-blue-300 px-4 py-2 text-sm text-blue-700">View Revenue Details →</Link>
@@ -173,12 +172,7 @@ export default function CooperativeDashboard() {
         </div>
       </div>
 
-      {memberModal && <Modal title="Add New Member" onClose={() => setMemberModal(false)}><div className="space-y-3"><input className="w-full rounded-xl border px-3 py-2" placeholder="Full name" /><input className="w-full rounded-xl border px-3 py-2" placeholder="Phone" /><button onClick={() => setMemberModal(false)} className="w-full rounded-xl bg-blue-600 text-white py-3">Create member</button></div></Modal>}
-      {profile && <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setProfile(false)}><div className="absolute right-6 top-20 w-52 rounded-2xl border bg-white p-2 shadow-xl" onClick={(e) => e.stopPropagation()}><button className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50">Profile</button><button className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50">Settings</button><button onClick={logout} className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-red-600">Logout</button></div></div>}
+      {profile && <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setProfile(false)}><div className="absolute right-6 top-20 w-52 rounded-2xl border bg-white p-2 shadow-xl" onClick={(e) => e.stopPropagation()}><Link href="/admin/worker-profile" className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50">Profile</Link><Link href="/admin/settings" className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50">Settings</Link><button onClick={logout} className="block w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 text-red-600">Logout</button></div></div>}
     </div>
   );
-}
-
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return <div className="fixed inset-0 z-50 bg-black/30 grid place-items-center p-4" onClick={onClose}><div className="w-full max-w-lg rounded-3xl bg-white p-5" onClick={(e) => e.stopPropagation()}><div className="flex justify-between items-center"><div className="text-xl font-semibold">{title}</div><button onClick={onClose}>✕</button></div><div className="mt-4">{children}</div></div></div>;
 }
