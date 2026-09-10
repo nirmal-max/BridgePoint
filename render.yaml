@@ -12,7 +12,9 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: bridgepoint-db
+          property: connectionString
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
@@ -25,3 +27,11 @@ services:
         value: nirmal.2007000-2@okhdfcbank
       - key: PLATFORM_UPI_NAME
         value: ""
+
+databases:
+  - name: bridgepoint-db
+    databaseName: bridgepoint
+    user: bridgepoint
+    region: singapore
+    plan: free
+
