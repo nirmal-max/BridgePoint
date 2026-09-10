@@ -1,2 +1,2 @@
-import CooperativeFeaturePage from "@/components/CooperativeFeaturePage";
-export default function DemandForecastPage() { return <CooperativeFeaturePage section="demand-forecast" />; }
+import CooperativePlanningPage from "@/components/CooperativePlanningPage";
+export default function DemandForecastPage() { return <CooperativePlanningPage />; }

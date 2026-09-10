@@ -1,6 +1,7 @@
 """Deterministic, explainable worker matching for BridgePoint jobs."""
 
 import json
+from dataclasses import dataclass
 from math import atan2, cos, radians, sin, sqrt
 
 from sqlalchemy.orm import Session
@@ -10,6 +11,14 @@ from app.models.job import Job
 from app.models.review import Review
 from app.models.user import User, UserRole
 from app.services.trust import calculate_trust_score
+
+
+@dataclass(frozen=True)
+class WorkforceRequirement:
+    skill: str
+    city: str
+    latitude: float | None = None
+    longitude: float | None = None
 
 SKILL_TAXONOMY = {
     "electrician": {"electrician", "electrical", "electrical repair", "electric wiring", "wiring"},
@@ -50,8 +59,8 @@ def calculate_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) ->
     return radius_km * (2 * atan2(sqrt(value), sqrt(max(0.0, 1 - value))))
 
 
-def _skill_score(user: User, job: Job) -> float:
-    requested = _normalise(job.required_skill or str(job.work_description))
+def _skill_score_for_request(user: User, requested_skill: str | None) -> float:
+    requested = _normalise(requested_skill)
     if not requested:
         return 0.0
     requested_group = next((group for group, aliases in SKILL_TAXONOMY.items() if requested in aliases or group in requested), None)
@@ -61,9 +70,12 @@ def _skill_score(user: User, job: Job) -> float:
             best = max(best, 1.0)
         elif requested_group and (skill == requested_group or skill in SKILL_TAXONOMY[requested_group]):
             best = max(best, 0.8)
-        elif requested_group and any(skill in aliases or aliases.intersection({skill}) for aliases in SKILL_TAXONOMY.values()):
-            best = max(best, 0.5)
     return best
+
+
+def _skill_score(user: User, job: Job) -> float:
+    work_description = job.work_description.value if hasattr(job.work_description, "value") else str(job.work_description)
+    return _skill_score_for_request(user, job.required_skill or work_description)
 
 
 def _is_labor(user: User) -> bool:
@@ -81,29 +93,31 @@ def _reliability_score(user: User, db: Session) -> float:
     return completed / total if total else 0.5
 
 
-def score_worker(worker: User, job: Job, db: Session) -> dict | None:
+def _score_worker_signals(worker: User, requested_skill: str | None, city: str | None, latitude: float | None, longitude: float | None, db: Session, require_coordinates: bool = False) -> dict | None:
     if not _is_labor(worker):
+        return None
+    if city and _normalise(worker.city) != _normalise(city):
         return None
     availability = db.query(WorkerAvailability).filter_by(worker_id=worker.id).first()
     if availability is not None and not availability.is_available:
         return None
-    skill_score = _skill_score(worker, job)
+    skill_score = _skill_score_for_request(worker, requested_skill)
     if skill_score <= 0:
         return None
 
-    location = db.query(WorkerLocation).filter_by(worker_id=worker.id).first()
+    location = db.query(WorkerLocation).filter_by(worker_id=worker.id).first() if latitude is not None and longitude is not None else None
     distance_km = None
     radius_km = 10.0
     distance_score = 0.5
-    if job.location and location:
-        distance_km = calculate_distance_km(location.latitude, location.longitude, job.location.latitude, job.location.longitude)
+    if latitude is not None and longitude is not None and location:
+        distance_km = calculate_distance_km(location.latitude, location.longitude, latitude, longitude)
         if distance_km > radius_km:
             return None
         distance_score = max(0.0, 1 - distance_km / max(radius_km, 0.1))
-    elif job.location:
+    elif require_coordinates:
         return None
 
-    required = _normalise(job.required_skill)
+    required = _normalise(requested_skill)
     verified_certification = 1.0 if not required else (1.0 if db.query(Certification).filter(Certification.worker_id == worker.id, Certification.verification_status == "VERIFIED").count() else 0.0)
     rating_score = _rating_score(worker, db)
     reliability_score = _reliability_score(worker, db)
@@ -132,9 +146,34 @@ def score_worker(worker: User, job: Job, db: Session) -> dict | None:
     }
 
 
+def score_worker(worker: User, job: Job, db: Session) -> dict | None:
+    latitude = job.location.latitude if job.location else None
+    longitude = job.location.longitude if job.location else None
+    work_description = job.work_description.value if hasattr(job.work_description, "value") else str(job.work_description)
+    return _score_worker_signals(worker, job.required_skill or work_description, None, latitude, longitude, db, require_coordinates=job.location is not None)
+
+
 def rank_workers(job: Job, db: Session) -> list[dict]:
     workers = db.query(User).all()
     ranked = [result for worker in workers if (result := score_worker(worker, job, db)) is not None]
+    return sorted(ranked, key=lambda item: item["score"], reverse=True)
+
+
+def rank_workers_for_requirement(requirement: WorkforceRequirement, db: Session) -> list[dict]:
+    """Rank real available workers without creating a synthetic Job row."""
+    ranked = [
+        result
+        for worker in db.query(User).all()
+        if (result := _score_worker_signals(
+            worker,
+            requirement.skill,
+            requirement.city,
+            requirement.latitude,
+            requirement.longitude,
+            db,
+            require_coordinates=requirement.latitude is not None or requirement.longitude is not None,
+        )) is not None
+    ]
     return sorted(ranked, key=lambda item: item["score"], reverse=True)
 
 

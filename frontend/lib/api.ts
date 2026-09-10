@@ -411,6 +411,14 @@ class ApiClient {
     skill: string; predicted_jobs: number; qualified_workers: number; available_workers: number;
     gap: number; recommendation: string; confidence: string;
   }[] }>("/api/cooperative/workforce"); }
+  getForecastDemand(city: string, skill: string, days = 7) {
+    const query = new URLSearchParams({ city, skill, days: String(days) });
+    return this.request<import("./types").DemandForecastResponse>(`/api/forecast/demand?${query}`);
+  }
+  getForecastWorkforce(city: string, skill: string, date: string) {
+    const query = new URLSearchParams({ city, skill, date });
+    return this.request<import("./types").WorkforceAllocationResponse>(`/api/forecast/workforce?${query}`);
+  }
   getCooperativeAnalytics() { return this.request<{
     jobs_posted: number; jobs_completed: number; completion_rate: number;
     average_job_value: number; jobs_by_category: Record<string, number>; jobs_by_city: Record<string, number>;

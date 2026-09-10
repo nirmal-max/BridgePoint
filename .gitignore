@@ -9,6 +9,7 @@ dist/
 build/
 data/
 *.db
+prophet-main/
 .env
 venv/
 .venv/
