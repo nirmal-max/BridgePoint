@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { getActiveWorkspaceRole, useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 
 const NAV = [
@@ -25,7 +25,8 @@ export default function CooperativeDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative"));
+  const demoCooperativeAccess = getActiveWorkspaceRole() === "cooperative";
+  const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative") || demoCooperativeAccess);
   useEffect(() => { if (!user) router.replace("/signin?role=cooperative&next=%2Fadmin"); else if (!cooperativeAccess) router.replace("/dashboard"); }, [cooperativeAccess, router, user]);
   const [period, setPeriod] = useState("Next 7 Days");
   const [sidebar, setSidebar] = useState(false);
@@ -33,6 +34,7 @@ export default function CooperativeDashboard() {
   const [notify, setNotify] = useState(false);
   const [profile, setProfile] = useState(false);
   const [jobsError, setJobsError] = useState("");
+  const [demoWarning] = useState(() => typeof window !== "undefined" ? sessionStorage.getItem("bp_demo_role_warning") || "" : "");
   const [overview, setOverview] = useState<{ members: number; verified_workers: number; active_jobs: number; cooperative_revenue: number } | null>(null);
   const [forecastRows, setForecastRows] = useState<{ skill: string; predicted_jobs: number; confidence: string }[]>([]);
   const [workforceRows, setWorkforceRows] = useState<{ skill: string; qualified_workers: number; available_workers: number; gap: number; recommendation: string }[]>([]);
@@ -99,6 +101,7 @@ export default function CooperativeDashboard() {
               </div>
             </section>
 
+            {demoWarning && <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{demoWarning}</div>}
             {jobsError && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Cooperative job data unavailable: {jobsError}</div>}
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {KPIS.map(([label, note], i) => { const live = overview ? [overview.members, overview.verified_workers, overview.active_jobs, `₹${overview.cooperative_revenue.toLocaleString("en-IN")}`][i] : null; return <div key={label} className="rounded-[24px] border border-slate-200 bg-white p-5"><div className="text-3xl mb-3">{["👥","🛡️","📅","₹"][i]}</div><div className="text-3xl font-semibold">{live ?? "Loading..."}</div><div className="text-slate-600">{label}</div><div className="mt-2 text-slate-500 text-sm">{overview ? "Live from backend reporting" : note}</div></div>; })}

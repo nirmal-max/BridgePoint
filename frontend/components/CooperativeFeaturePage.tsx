@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { getActiveWorkspaceRole, useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import type { CertificationReview } from "@/lib/types";
 
@@ -31,7 +31,7 @@ export default function CooperativeFeaturePage({ section }: { section: Section }
   const [mobileNav, setMobileNav] = useState(false);
   const [data, setData] = useState<unknown>(null);
   const [error, setError] = useState("");
-  const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative"));
+  const cooperativeAccess = !!user && (user.is_admin || user.roles?.includes("cooperative") || getActiveWorkspaceRole() === "cooperative");
   useEffect(() => { if (!loading && !user) router.replace(`/signin?role=cooperative&next=${encodeURIComponent(`/admin/${section}`)}`); else if (!loading && user && !cooperativeAccess) router.replace("/dashboard"); }, [cooperativeAccess, loading, router, section, user]);
   useEffect(() => { if (!user) return; const load = section === "members" ? api.getCooperativeMembers() : section === "demand-forecast" ? api.getDemandForecast() : section === "workforce" ? api.getWorkforceAllocation() : section === "analytics" ? api.getCooperativeAnalytics() : section === "notifications" ? api.getNotifications() : section === "wage-benchmark" ? api.getWageBenchmark(user.city || undefined) : api.getCooperativeOverview(); load.then(setData).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load cooperative data.")); }, [section, user]);
   if (loading || !cooperativeAccess) return <div className="grid min-h-screen place-items-center bg-[#f3f7fd] text-slate-500">Checking cooperative access...</div>;

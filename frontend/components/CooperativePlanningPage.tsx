@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+import { getActiveWorkspaceRole, useAuth } from "@/lib/auth-context";
 import type { DemandForecastResponse, WorkforceAllocationResponse } from "@/lib/types";
 
 const skills = ["electrician", "plumber", "carpenter", "painter", "cleaner", "driver", "caregiver"];
@@ -19,7 +19,7 @@ export default function CooperativePlanningPage() {
   const [allocation, setAllocation] = useState<WorkforceAllocationResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const access = !!user && (user.is_admin || user.roles?.includes("cooperative"));
+  const access = !!user && (user.is_admin || user.roles?.includes("cooperative") || getActiveWorkspaceRole() === "cooperative");
 
   useEffect(() => {
     if (!loading && !user) router.replace("/signin?role=cooperative&next=%2Fadmin/demand-forecast");
