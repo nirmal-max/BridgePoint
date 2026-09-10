@@ -1,11 +1,14 @@
 import type { NextConfig } from 'next';
 
-// Backend base URL — used for the dev proxy rewrites.
-// In production (Render/Vercel), set NEXT_PUBLIC_API_URL to the deployed
-// backend URL; the rewrites are only active in development.
+// Backend base URL — used for dev proxy rewrites and production Vercel routing.
+// In production, routes /api/* to the live Render backend.
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '');
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '') ||
-  'http://127.0.0.1:8000';
+  rawApiUrl && !/bridgepoint-api-kbc2|railway\.app/i.test(rawApiUrl)
+    ? rawApiUrl
+    : process.env.NODE_ENV === 'production'
+      ? 'https://bridge-point.onrender.com'
+      : 'http://127.0.0.1:8000';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
