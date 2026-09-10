@@ -60,6 +60,7 @@ class JobResponse(BaseModel):
     status: str
     allotted_labor_id: Optional[int] = None
     allotted_labor_name: Optional[str] = None
+    allotted_labor_provider_status: Optional[str] = None
     accepted_at: Optional[datetime] = None
     payment_method: Optional[str] = None
     created_at: datetime

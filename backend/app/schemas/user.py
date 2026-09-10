@@ -62,6 +62,7 @@ class UserResponse(BaseModel):
     bio: Optional[str] = None
     phone_verified: bool
     email_verified: bool
+    provider_verification_status: str = "VERIFIED"
     created_at: datetime
 
     model_config = {"from_attributes": True}

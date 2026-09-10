@@ -14,6 +14,7 @@ export interface User {
   bio?: string | null;
   phone_verified: boolean;
   email_verified: boolean;
+  provider_verification_status?: "PENDING" | "VERIFIED" | "REJECTED";
   created_at: string;
 }
 
@@ -22,13 +23,14 @@ export interface Society { id: number; federation_id: number; federation_name?: 
 export interface CooperativeMembership { id: number; user_id: number; worker_name?: string | null; worker_email?: string | null; society_id: number; society_name?: string | null; federation_id?: number | null; membership_number: string; membership_type: string; status: string; joined_at: string; verified_at?: string | null; verified_by?: number | null; }
 export interface WorkerAvailability { worker_id: number; is_available: boolean; updated_at: string; }
 export interface WorkerLocation { worker_id: number; latitude: number; longitude: number; accuracy_m?: number | null; updated_at: string; }
-export interface JobMatch { worker_id: number; name: string; score: number; match_score: number; distance_km?: number | null; available: boolean; rating: number; certified: boolean; skill_score: number; reliability_score: number; workload_score: number; fairness_score: number; trust_score: number; trust_confidence: "high" | "medium" | "low"; trust_evidence_count: number; }
+export interface JobMatch { worker_id: number; name: string; score: number; match_score: number; distance_km?: number | null; available: boolean; rating: number; certified: boolean; provider_verified: boolean; skill_score: number; reliability_score: number; workload_score: number; fairness_score: number; trust_score: number; trust_confidence: "high" | "medium" | "low"; trust_evidence_count: number; }
 export interface DemandForecastPoint { date: string; predicted_demand: number; lower_bound: number; upper_bound: number; }
 export interface DemandForecastResponse { status: "ok" | "insufficient_data"; city: string; skill: string; model: string; history_days: number; minimum_history_days: number; forecast: DemandForecastPoint[]; }
 export interface RecommendedWorker { worker_id: number; name: string; match_score: number; certified: boolean; available: boolean; rating: number; trust_score: number; trust_confidence: "high" | "medium" | "low"; workload_score: number; fairness_score: number; distance_km?: number | null; }
 export interface WorkforceAllocationResponse { status: "ok" | "insufficient_data"; date: string; forecast?: DemandForecastPoint; allocation?: { city: string; skill: string; predicted_demand: number; eligible_workers: number; recommended_worker_count: number; shortage: number; recommended_workers: RecommendedWorker[] } | null; history_days: number; minimum_history_days: number; }
 export interface Certification { id: number; worker_id: number; name: string; issuing_organization: string; issue_date: string; expiry_date?: string | null; verification_status: "VERIFIED" | "PENDING" | "EXPIRED" | "SELF_DECLARED"; credential_id?: string | null; created_at: string; }
 export interface CertificationReview extends Certification { worker_name: string; }
+export interface ProviderVerification { worker_id: number; worker_name: string; labor_category?: string | null; city?: string | null; skills: string[]; status: "PENDING" | "VERIFIED" | "REJECTED"; }
 export interface TrustScore { worker_id: number; trust_score: number; confidence: "high" | "medium" | "low"; evidence_count: number; completed_jobs: number; assigned_jobs: number; average_rating?: number | null; verified_certifications: number; completion_rate: number; cancellation_rate: number; method: string; }
 export interface WelfareRecord { id: number; worker_id: number; support_type: string; status: string; eligibility?: string | null; notes?: string | null; updated_at: string; }
 export interface InsurancePolicy { id: number; worker_id: number; provider: string; policy_name: string; policy_number?: string | null; coverage?: string | null; start_date?: string | null; expiry_date?: string | null; status: string; claim_status: string; created_at: string; }
@@ -63,6 +65,7 @@ export interface Job {
   status: JobStatus;
   allotted_labor_id?: number | null;
   allotted_labor_name?: string | null;
+  allotted_labor_provider_status?: "PENDING" | "VERIFIED" | "REJECTED" | null;
   accepted_at?: string | null;
   payment_method?: string | null;
   created_at: string;

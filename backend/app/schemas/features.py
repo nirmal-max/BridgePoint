@@ -47,6 +47,15 @@ class CertificationResponse(CertificationCreate):
     model_config = {"from_attributes": True}
 
 
+class ProviderVerificationResponse(BaseModel):
+    worker_id: int
+    worker_name: str
+    labor_category: str | None = None
+    city: str | None = None
+    skills: list[str]
+    status: str
+
+
 class WelfareUpdate(BaseModel):
     support_type: str = Field(..., min_length=2, max_length=100)
     status: str = Field(default="available", max_length=30)

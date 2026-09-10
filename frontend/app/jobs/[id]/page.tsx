@@ -334,6 +334,7 @@ export default function JobDetailPage() {
                 <div className="font-semibold text-[var(--color-bp-black)] text-lg">
                   {job.allotted_labor_name}
                 </div>
+                {job.allotted_labor_provider_status === "VERIFIED" && <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">Verified Service Provider</span>}
                 {job.accepted_at && (
                   <div className="text-xs text-[var(--color-bp-gray-500)] mt-0.5">
                     Accepted {new Date(job.accepted_at).toLocaleString("en-IN")}
@@ -355,7 +356,7 @@ export default function JobDetailPage() {
         {isOwner && job.status === "posted" && (
           <div className="card !p-6 mb-4">
             <h3 className="text-sm font-semibold text-[var(--color-bp-gray-500)] uppercase tracking-wider mb-3">Recommended workers</h3>
-            {matchesLoading ? <p className="text-sm text-[var(--color-bp-gray-500)]">Calculating eligible matches...</p> : matches.length === 0 ? <p className="text-sm text-[var(--color-bp-gray-500)]">No eligible workers match this job yet. Add coordinates and a required skill to improve matching.</p> : <div className="space-y-3">{matches.slice(0, 5).map((match) => <div key={match.worker_id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-4"><div><b>{match.name}</b><p className="text-xs text-slate-500">{match.distance_km == null ? "Distance unavailable" : `${match.distance_km} km`} · Rating {match.rating.toFixed(1)} · Trust {Math.round(match.trust_score)} ({match.trust_confidence} confidence) · {match.certified ? "Verified certification" : "Certification not verified"}</p></div><strong className="text-blue-700">{Math.round(match.match_score)}% match</strong></div>)}</div>}
+            {matchesLoading ? <p className="text-sm text-[var(--color-bp-gray-500)]">Calculating eligible matches...</p> : matches.length === 0 ? <p className="text-sm text-[var(--color-bp-gray-500)]">No eligible workers match this job yet. Add coordinates and a required skill to improve matching.</p> : <div className="space-y-3">{matches.slice(0, 5).map((match) => <div key={match.worker_id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-4"><div><div className="flex flex-wrap items-center gap-2"><b>{match.name}</b>{match.provider_verified && <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-700">Verified Service Provider</span>}</div><p className="text-xs text-slate-500">{match.distance_km == null ? "Distance unavailable" : `${match.distance_km} km`} · Rating {match.rating.toFixed(1)} · Trust {Math.round(match.trust_score)} ({match.trust_confidence} confidence) · {match.certified ? "Verified certification" : "Certification not verified"}</p></div><strong className="text-blue-700">{Math.round(match.match_score)}% match</strong></div>)}</div>}
           </div>
         )}
 

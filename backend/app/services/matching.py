@@ -96,6 +96,8 @@ def _reliability_score(user: User, db: Session) -> float:
 def _score_worker_signals(worker: User, requested_skill: str | None, city: str | None, latitude: float | None, longitude: float | None, db: Session, require_coordinates: bool = False) -> dict | None:
     if not _is_labor(worker):
         return None
+    if worker.provider_verification_status != "VERIFIED":
+        return None
     if city and _normalise(worker.city) != _normalise(city):
         return None
     availability = db.query(WorkerAvailability).filter_by(worker_id=worker.id).first()
@@ -143,6 +145,7 @@ def _score_worker_signals(worker: User, requested_skill: str | None, city: str |
         "trust_score": trust["trust_score"],
         "trust_confidence": trust["confidence"],
         "trust_evidence_count": trust["evidence_count"],
+        "provider_verified": True,
     }
 
 

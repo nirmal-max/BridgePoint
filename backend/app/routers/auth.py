@@ -53,6 +53,9 @@ def register(payload: UserRegister, db: Session = Depends(get_db)):
         bio=payload.bio,
         email_verified=True,   # Auto-verified for MVP; enforce real OTP when provider is integrated
         phone_verified=True,   # Auto-verified for MVP; enforce real OTP when provider is integrated
+        provider_verification_status=(
+            "PENDING" if UserRole.LABOR.value in roles else "VERIFIED"
+        ),
     )
 
     db.add(user)
@@ -144,5 +147,6 @@ def _user_to_response(user: User) -> UserResponse:
         bio=user.bio,
         phone_verified=user.phone_verified,
         email_verified=user.email_verified,
+        provider_verification_status=user.provider_verification_status,
         created_at=user.created_at,
     )

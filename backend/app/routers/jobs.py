@@ -559,6 +559,9 @@ def _job_to_response(job: Job, current_user: User | None = None) -> JobResponse:
         status=job.status,
         allotted_labor_id=job.allotted_labor_id,
         allotted_labor_name=allotted_labor.full_name if allotted_labor else None,
+        allotted_labor_provider_status=(
+            allotted_labor.provider_verification_status if allotted_labor else None
+        ),
         accepted_at=job.accepted_at,
         payment_method=job.payment_method,
         created_at=job.created_at,

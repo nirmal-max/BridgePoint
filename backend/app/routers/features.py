@@ -11,12 +11,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.feature import Certification, EmergencyRequest, InsurancePolicy, Invoice, JobLocation, Notification, WelfareRecord, WorkerAvailability, WorkerLocation
 from app.models.job import Job
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.commission import CommissionLedger
 from app.schemas.features import (
     AvailabilityResponse, AvailabilityUpdate, CertificationCreate, CertificationResponse,
     EmergencyCreate, EmergencyResponse, EmergencyStatusUpdate, InsuranceCreate, InsuranceResponse,
-    InvoiceResponse, LocationResponse, LocationUpdate, NotificationResponse, WelfareResponse, WelfareUpdate,
+    InvoiceResponse, LocationResponse, LocationUpdate, NotificationResponse, ProviderVerificationResponse,
+    WelfareResponse, WelfareUpdate,
 )
 from app.services.websocket_manager import manager
 from app.services.trust import calculate_trust_score
@@ -108,6 +109,66 @@ def certification_status(item: Certification) -> str:
 
 def certification_payload(item: Certification) -> dict:
     return {"id": item.id, "worker_id": item.worker_id, "name": item.name, "issuing_organization": item.issuing_organization, "issue_date": item.issue_date, "expiry_date": item.expiry_date, "verification_status": certification_status(item), "credential_id": item.credential_id, "created_at": item.created_at}
+
+
+def provider_verification_payload(worker: User) -> dict:
+    try:
+        skills = json.loads(worker.skills or "[]")
+    except (TypeError, json.JSONDecodeError):
+        skills = []
+    return {
+        "worker_id": worker.id,
+        "worker_name": worker.full_name,
+        "labor_category": worker.labor_category.value if worker.labor_category else None,
+        "city": worker.city,
+        "skills": skills if isinstance(skills, list) else [],
+        "status": worker.provider_verification_status,
+    }
+
+
+@router.get("/api/workers/me/provider-verification", response_model=ProviderVerificationResponse)
+def get_provider_verification(
+    db: Session = Depends(get_db), current_user: User = Depends(require_labor)
+):
+    return provider_verification_payload(current_user)
+
+
+@router.get("/api/cooperative/provider-verification", response_model=list[ProviderVerificationResponse])
+def list_provider_verification(
+    db: Session = Depends(get_db), current_user: User = Depends(require_cooperative)
+):
+    workers = db.query(User).filter(
+        or_(User.roles.contains('"labor"'), User.labor_category.isnot(None))
+    ).order_by(User.full_name.asc()).all()
+    return [provider_verification_payload(worker) for worker in workers]
+
+
+def update_provider_verification(
+    worker_id: int, new_status: str, db: Session, current_user: User
+) -> dict:
+    if current_user.id == worker_id:
+        raise HTTPException(403, "Workers cannot verify their own provider status")
+    worker = db.query(User).filter(User.id == worker_id).first()
+    if not worker or not (UserRole.LABOR.value in roles(worker) or worker.labor_category is not None):
+        raise HTTPException(404, "Worker not found")
+    worker.provider_verification_status = new_status
+    db.commit()
+    db.refresh(worker)
+    return provider_verification_payload(worker)
+
+
+@router.post("/api/providers/{worker_id}/verify", response_model=ProviderVerificationResponse)
+def verify_provider(
+    worker_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_cooperative)
+):
+    return update_provider_verification(worker_id, "VERIFIED", db, current_user)
+
+
+@router.post("/api/providers/{worker_id}/reject", response_model=ProviderVerificationResponse)
+def reject_provider(
+    worker_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_cooperative)
+):
+    return update_provider_verification(worker_id, "REJECTED", db, current_user)
 
 
 @router.get("/api/workers/me/certifications", response_model=list[CertificationResponse])

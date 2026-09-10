@@ -50,6 +50,10 @@ class User(Base):
     # ─── Verification ────────────────────────────────────
     phone_verified = Column(Boolean, default=False)
     email_verified = Column(Boolean, default=False)
+    # Separate provider approval from individual skill certifications.
+    provider_verification_status = Column(
+        String(20), nullable=False, default="VERIFIED", server_default="VERIFIED"
+    )
 
     # ─── Timestamps ──────────────────────────────────────
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

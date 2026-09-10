@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
-import type { Certification, EmergencyRequest, Job, Notification, TrustScore, WorkerAvailability, WorkerLocation, WelfareRecord, InsurancePolicy } from "@/lib/types";
+import type { Certification, EmergencyRequest, Job, Notification, ProviderVerification, TrustScore, WorkerAvailability, WorkerLocation, WelfareRecord, InsurancePolicy } from "@/lib/types";
 import MessagesWorkspace from "@/components/MessagesWorkspace";
 
 type Section = "available-jobs" | "jobs" | "earnings" | "skill-passport" | "training" | "messages" | "profile" | "settings" | "availability" | "notifications" | "emergency";
@@ -99,7 +99,7 @@ export default function WorkerFeaturePage({ section }: { section: Section }) {
       {!loading && !error && section === "earnings" && <Earnings jobs={jobs} />}
       {section === "skill-passport" && <Passport user={user} />}
       {section === "training" && <Training />}
-      {section === "profile" && <Profile user={user} />}
+      {section === "profile" && <><ProviderStatus /><Profile user={user} /></>}
       {section === "settings" && <Empty title="Settings" text="Worker account settings are managed from your BridgePoint profile." />}
     </>;
   };
@@ -164,6 +164,17 @@ function Training() {
 }
 
 function Profile({ user }: { user: ReturnType<typeof useAuth>["user"] }) { const [memberships, setMemberships] = useState<import("@/lib/types").CooperativeMembership[]>([]); const [membershipError, setMembershipError] = useState(""); useEffect(() => { api.getMyMemberships().then(setMemberships).catch(() => setMembershipError("Cooperative membership data is not available yet.")); }, []); return <section className="space-y-4"><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Worker Profile</h2><div className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><p>Name: {user?.full_name || "Not available"}</p><p>Email: {user?.email || "Not available"}</p><p>Phone: {user?.phone || "Not available"}</p><p>City: {user?.city || "Not available"}</p><p>Skills: {user?.skills?.join(", ") || "Not added yet"}</p><p>Bio: {user?.bio || "Not added yet"}</p></div></div><ServiceLocationPanel /><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Cooperative Membership</h2>{membershipError ? <p className="mt-3 text-sm text-slate-500">{membershipError}</p> : memberships.length === 0 ? <p className="mt-3 text-sm text-slate-500">You are not connected to a cooperative society yet.</p> : <div className="mt-3 space-y-3">{memberships.map((membership) => <div key={membership.id} className="rounded-xl bg-slate-50 p-4 text-sm"><b>{membership.society_name || "Society"}</b><p className="text-slate-500">Membership ID: {membership.membership_number} · {membership.status}</p><p className="text-slate-500">Joined: {new Date(membership.joined_at).toLocaleDateString()}</p></div>)}</div>}</div></section>; }
+
+function ProviderStatus() {
+  const [provider, setProvider] = useState<ProviderVerification | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => { api.getProviderVerification().then(setProvider).catch((err: unknown) => setError(err instanceof Error ? err.message : "Provider verification status is unavailable.")); }, []);
+  if (error) return <div className="rounded-2xl border bg-white p-6 text-sm text-slate-500">Provider verification status is unavailable.</div>;
+  if (!provider) return <div className="rounded-2xl border bg-white p-6 text-sm text-slate-500">Loading provider verification...</div>;
+  const label = provider.status === "VERIFIED" ? "Verified Service Provider" : provider.status === "REJECTED" ? "Provider verification rejected" : "Provider verification pending";
+  const tone = provider.status === "VERIFIED" ? "bg-emerald-50 text-emerald-800" : provider.status === "REJECTED" ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-800";
+  return <div className={`rounded-2xl border p-6 ${tone}`}><b>{label}</b><p className="mt-1 text-sm">Provider approval is reviewed by the cooperative and is separate from skill certifications.</p></div>;
+}
 
 function ServiceLocationPanel() {
   const [location, setLocation] = useState<WorkerLocation | null>(null);
