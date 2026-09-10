@@ -163,6 +163,80 @@ function Training() {
   return <section className="grid gap-4 md:grid-cols-2">{error && <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700 md:col-span-2">{error}</p>}<article className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-lg font-bold">Worker welfare support</h2><p className="mt-2 text-sm text-slate-600">BridgePoint support information. No government scheme integration is claimed.</p>{welfare.length ? welfare.map((item) => <p key={item.id} className="mt-4 rounded-xl bg-slate-50 p-3 text-sm">{item.support_type}: <b>{item.status}</b></p>) : <p className="mt-4 text-sm text-slate-500">No support records yet.</p>}<button onClick={enroll} className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Request BridgePoint support</button></article><article className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-lg font-bold">Insurance policies</h2><p className="mt-2 text-sm text-slate-600">Policies appear here when entered by an authorized worker workflow.</p>{insurance.length ? insurance.map((item) => <div key={item.id} className="mt-4 rounded-xl bg-slate-50 p-3 text-sm"><b>{item.policy_name}</b><p>{item.provider} · {item.status}</p><p className="text-slate-500">Claim: {item.claim_status}</p></div>) : <p className="mt-4 text-sm text-slate-500">No insurance policy data is available.</p>}</article><Info title="Training programs" text="Training provider integrations are pending. Verified certifications remain available in Skill Passport." href="/worker/skill-passport" /><Info title="Cooperative support" text="Use Messages to contact BridgePoint support or your cooperative." href="/worker/messages" /></section>;
 }
 
-function Profile({ user }: { user: ReturnType<typeof useAuth>["user"] }) { const [memberships, setMemberships] = useState<import("@/lib/types").CooperativeMembership[]>([]); const [membershipError, setMembershipError] = useState(""); useEffect(() => { api.getMyMemberships().then(setMemberships).catch(() => setMembershipError("Cooperative membership data is not available yet.")); }, []); return <section className="space-y-4"><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Worker Profile</h2><div className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><p>Name: {user?.full_name || "Not available"}</p><p>Email: {user?.email || "Not available"}</p><p>Phone: {user?.phone || "Not available"}</p><p>City: {user?.city || "Not available"}</p><p>Skills: {user?.skills?.join(", ") || "Not added yet"}</p><p>Bio: {user?.bio || "Not added yet"}</p></div></div><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Cooperative Membership</h2>{membershipError ? <p className="mt-3 text-sm text-slate-500">{membershipError}</p> : memberships.length === 0 ? <p className="mt-3 text-sm text-slate-500">You are not connected to a cooperative society yet.</p> : <div className="mt-3 space-y-3">{memberships.map((membership) => <div key={membership.id} className="rounded-xl bg-slate-50 p-4 text-sm"><b>{membership.society_name || "Society"}</b><p className="text-slate-500">Membership ID: {membership.membership_number} · {membership.status}</p><p className="text-slate-500">Joined: {new Date(membership.joined_at).toLocaleDateString()}</p></div>)}</div>}</div></section>; }
+function Profile({ user }: { user: ReturnType<typeof useAuth>["user"] }) { const [memberships, setMemberships] = useState<import("@/lib/types").CooperativeMembership[]>([]); const [membershipError, setMembershipError] = useState(""); useEffect(() => { api.getMyMemberships().then(setMemberships).catch(() => setMembershipError("Cooperative membership data is not available yet.")); }, []); return <section className="space-y-4"><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Worker Profile</h2><div className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><p>Name: {user?.full_name || "Not available"}</p><p>Email: {user?.email || "Not available"}</p><p>Phone: {user?.phone || "Not available"}</p><p>City: {user?.city || "Not available"}</p><p>Skills: {user?.skills?.join(", ") || "Not added yet"}</p><p>Bio: {user?.bio || "Not added yet"}</p></div></div><ServiceLocationPanel /><div className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-xl font-bold">Cooperative Membership</h2>{membershipError ? <p className="mt-3 text-sm text-slate-500">{membershipError}</p> : memberships.length === 0 ? <p className="mt-3 text-sm text-slate-500">You are not connected to a cooperative society yet.</p> : <div className="mt-3 space-y-3">{memberships.map((membership) => <div key={membership.id} className="rounded-xl bg-slate-50 p-4 text-sm"><b>{membership.society_name || "Society"}</b><p className="text-slate-500">Membership ID: {membership.membership_number} · {membership.status}</p><p className="text-slate-500">Joined: {new Date(membership.joined_at).toLocaleDateString()}</p></div>)}</div>}</div></section>; }
+
+function ServiceLocationPanel() {
+  const [location, setLocation] = useState<WorkerLocation | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  async function loadLocation() {
+    setLoading(true);
+    setError("");
+    try {
+      setLocation(await api.getWorkerLocation());
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unable to load your service location.";
+      if (message.toLowerCase().includes("not been set") || message.includes("404")) setLocation(null);
+      else setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void loadLocation(); }, []);
+
+  function captureLocation() {
+    if (!navigator.geolocation) {
+      setError("Location is unavailable because this browser does not support geolocation.");
+      return;
+    }
+    setSaving(true);
+    setMessage("");
+    setError("");
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const saved = await api.updateWorkerLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy_m: position.coords.accuracy,
+        });
+        setLocation(saved);
+        setMessage("Location detected and saved.");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Unable to save your service location.");
+      } finally {
+        setSaving(false);
+      }
+    }, (geoError) => {
+      const messages: Record<number, string> = {
+        1: "Location permission was denied. Allow location access and retry.",
+        2: "Location is currently unavailable. Check your device location settings and retry.",
+        3: "Location detection timed out. Please retry.",
+      };
+      setError(messages[geoError.code] || "Unable to detect your location. Please retry.");
+      setSaving(false);
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 });
+  }
+
+  return <section className="rounded-2xl border bg-white p-6 shadow-sm" aria-live="polite">
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+      <div>
+        <h2 className="text-xl font-bold">Service Location</h2>
+        <p className="mt-2 text-sm text-slate-500">Used for nearby job matching. BridgePoint stores your coordinates, not a live tracking stream.</p>
+      </div>
+      <button type="button" disabled={saving} onClick={captureLocation} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+        {saving ? "Saving location..." : location ? "Update location" : "Use My Current Location"}
+      </button>
+    </div>
+    {loading && <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Loading saved location...</p>}
+    {!loading && location && <div className="mt-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800"><b>Location detected / saved</b><p className="mt-1">Coordinates: {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}{location.accuracy_m != null ? ` · Accuracy ${Math.round(location.accuracy_m)} m` : ""}</p><p className="mt-1 text-xs text-emerald-700">Last updated {new Date(location.updated_at).toLocaleString()}</p></div>}
+    {!loading && !location && !error && <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No service location saved yet. Add one to improve nearby job matching.</p>}
+    {message && <p className="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
+    {error && <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700"><p>{error}</p><button type="button" onClick={() => { setError(""); captureLocation(); }} className="mt-3 rounded-lg border border-red-300 px-3 py-2 font-semibold">Retry</button></div>}
+  </section>;
+}
 function Info({ title, text, href }: { title: string; text: string; href?: string }) { return <article className="rounded-2xl border bg-white p-6 shadow-sm"><h2 className="text-lg font-bold">{title}</h2><p className="mt-2 text-sm text-slate-600">{text}</p>{href && <Link href={href} className="mt-4 inline-block text-sm font-semibold text-blue-600">Open →</Link>}</article>; }
 function Empty({ title, text }: { title: string; text: string }) { return <section className="rounded-2xl border bg-white p-8 text-center shadow-sm"><h2 className="text-xl font-bold">{title}</h2><p className="mt-2 text-sm text-slate-500">{text}</p></section>; }

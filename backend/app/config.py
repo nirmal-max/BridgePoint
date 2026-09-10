@@ -31,6 +31,7 @@ _cors_env = os.getenv('CORS_ORIGINS', '')
 CORS_ORIGINS: list[str] = [o.strip() for o in _cors_env.split(',') if o.strip()] if _cors_env else [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://10.47.158.217:3000',
     'http://localhost:3001',
     'http://127.0.0.1:3001',
 ]
