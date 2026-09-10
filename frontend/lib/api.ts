@@ -354,13 +354,7 @@ class ApiClient {
 
   getAdminPending() {
     return this.request<{
-      jobs: {
-        id: number; title: string; status: string;
-        employer_name: string | null; worker_name: string | null;
-        budget: number; platform_commission: number; worker_payout: number;
-        payment_method: string | null; payment_sent_at: string | null;
-        created_at: string | null;
-      }[];
+      jobs: import("./types").AdminPendingPayment[];
       total: number;
     }>("/api/payments/admin/pending");
   }

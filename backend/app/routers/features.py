@@ -196,8 +196,8 @@ def add_insurance(payload: InsuranceCreate, db: Session = Depends(get_db), curre
     return item
 
 
-def invoice_payload(item: Invoice, job: Job) -> dict:
-    return {"id": item.id, "job_id": item.job_id, "invoice_number": item.invoice_number, "employer_id": item.employer_id, "worker_id": item.worker_id, "employer_name": job.employer.full_name if job.employer else "Customer", "worker_name": job.allotted_labor.full_name if job.allotted_labor else None, "service": item.service, "job_date": job.date_of_task, "amount": item.amount_paise / 100, "commission": item.commission_paise / 100, "total": item.total_paise / 100, "payment_status": item.payment_status, "transaction_reference": item.transaction_reference, "created_at": item.created_at}
+def invoice_payload(item: Invoice, job: Job, transaction_reference: str | None = None) -> dict:
+    return {"id": item.id, "job_id": item.job_id, "job_status": job.status, "invoice_number": item.invoice_number, "employer_id": item.employer_id, "worker_id": item.worker_id, "employer_name": job.employer.full_name if job.employer else "Customer", "worker_name": job.allotted_labor.full_name if job.allotted_labor else None, "service": item.service, "job_date": job.date_of_task, "amount": item.amount_paise / 100, "commission": item.commission_paise / 100, "total": item.total_paise / 100, "payment_status": job.payment_status or item.payment_status, "transaction_reference": transaction_reference or item.transaction_reference, "created_at": item.created_at}
 
 
 @router.get("/api/invoices/job/{job_id}", response_model=InvoiceResponse)
@@ -209,13 +209,13 @@ def get_invoice(job_id: int, db: Session = Depends(get_db), current_user: User =
     if not allowed:
         raise HTTPException(403, "You cannot access this invoice")
     item = db.query(Invoice).filter_by(job_id=job_id).first()
+    ledger = db.query(CommissionLedger).filter_by(job_id=job_id).first()
     if item is None:
-        ledger = db.query(CommissionLedger).filter_by(job_id=job_id).first()
         item = Invoice(job_id=job.id, invoice_number=f"BP-{job.id:06d}", employer_id=job.employer_id, worker_id=job.allotted_labor_id, service=job.title, amount_paise=job.budget_paise, commission_paise=job.platform_commission_paise, total_paise=job.employer_total_paise, payment_status=job.payment_status or "pending", transaction_reference=ledger.upi_reference if ledger else None)
         db.add(item)
         db.commit()
         db.refresh(item)
-    return invoice_payload(item, job)
+    return invoice_payload(item, job, ledger.upi_reference if ledger else None)
 
 
 @router.get("/api/notifications", response_model=list[NotificationResponse])

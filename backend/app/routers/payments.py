@@ -431,6 +431,7 @@ def get_pending_payments(
             "status": job.status,
             "employer_name": employer.full_name if employer else None,
             "worker_name": labor.full_name if labor else None,
+            "worker_payment_number": labor.phone if labor else None,
             "budget": job.budget_paise / 100,
             "employer_total": job.employer_total_paise / 100,
             "platform_commission": job.platform_commission_paise / 100,

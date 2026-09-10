@@ -84,6 +84,7 @@ class InsuranceResponse(InsuranceCreate):
 class InvoiceResponse(BaseModel):
     id: int
     job_id: int
+    job_status: str
     invoice_number: str
     employer_id: int
     worker_id: int | None

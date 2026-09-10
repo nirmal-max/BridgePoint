@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -468,11 +469,15 @@ export default function JobDetailPage() {
                 📲 Scan & Pay
               </h3>
 
-              {/* Dynamic QR Code */}
+              <p className="mb-4 text-sm text-[var(--color-bp-gray-600)]">
+                Scan this QR to make the payment. The payment is received by the BridgePoint admin and manually verified.
+              </p>
+
+              {/* Project-provided BridgePoint admin QR */}
               <div className="bg-white border-2 border-dashed border-[var(--color-bp-gray-300)] rounded-2xl p-6 mb-4 inline-block mx-auto">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?data=upi://pay?pa=nirmal.2007000-2@okhdfcbank%26am=${job.budget.toFixed(2)}%26cu=INR&size=200x200`}
-                  alt="Platform UPI QR"
+                <Image
+                  src="/platform-qr.png"
+                  alt="BridgePoint admin payment QR"
                   width={200}
                   height={200}
                   className="mx-auto"
@@ -483,10 +488,10 @@ export default function JobDetailPage() {
                 UPI ID: <strong className="text-[var(--color-bp-black)]">nirmal.2007000-2@okhdfcbank</strong>
               </div>
               <div className="text-2xl font-bold text-[var(--color-bp-black)] mb-1">
-                ₹{job.budget.toFixed(0)}
+                ₹{job.employer_total.toFixed(0)}
               </div>
               <div className="text-xs text-[var(--color-bp-gray-500)] mb-4">
-                Total Payment: ₹{job.budget.toFixed(0)}
+                Total payment to BridgePoint admin: ₹{job.employer_total.toFixed(0)}
               </div>
 
               {/* UTR Reference Input */}
