@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import Icon from "@/components/Icon";
 
 interface ChatMessage {
   id: number;
@@ -73,7 +74,7 @@ export default function ChatPanel({ jobId, isParticipant }: ChatPanelProps) {
     <div className="card !p-0 overflow-hidden">
       <div className="px-5 py-3 border-b border-[var(--color-bp-gray-200)] bg-[var(--color-bp-gray-100)]">
         <h3 className="text-sm font-semibold text-[var(--color-bp-gray-600)] uppercase tracking-wider">
-          💬 Chat
+          <span className="inline-flex items-center gap-2"><Icon name="chat" size={15} />Chat</span>
         </h3>
       </div>
 

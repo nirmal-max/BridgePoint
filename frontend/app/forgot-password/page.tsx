@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Icon from "@/components/Icon";
 
 // Use the same API base URL logic as api.ts
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -243,7 +244,7 @@ export default function ForgotPasswordPage() {
         {/* Step 4: Success */}
         {step === "done" && (
           <div className="text-center">
-            <div className="text-5xl mb-4">✅</div>
+            <div className="mb-4 text-emerald-700"><Icon name="check" size={36} className="mx-auto" /></div>
             <button
               onClick={() => router.push("/login")}
               className="btn-primary w-full !py-4 !text-base mt-4"

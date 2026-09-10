@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import type { Certification, EmergencyRequest, Job, Notification, ProviderVerification, TrustScore, WorkerAvailability, WorkerLocation, WelfareRecord, InsurancePolicy } from "@/lib/types";
 import MessagesWorkspace from "@/components/MessagesWorkspace";
+import Icon from "@/components/Icon";
 
 type Section = "available-jobs" | "jobs" | "earnings" | "skill-passport" | "training" | "messages" | "profile" | "settings" | "availability" | "notifications" | "emergency";
 const links = [
@@ -106,15 +107,15 @@ export default function WorkerFeaturePage({ section }: { section: Section }) {
 
   return <div className="min-h-screen bg-[#f3f8ff] text-slate-900"><div className="flex">
     <aside className={(mobileNav ? "translate-x-0" : "-translate-x-full") + " fixed inset-y-0 left-0 z-40 w-72 border-r bg-white p-5 transition-transform lg:static lg:w-60 lg:translate-x-0"}>
-      <div className="flex items-center justify-between"><Link href="/worker" className="text-2xl font-bold">Bridge<span className="text-blue-600">Point</span></Link><button aria-label="Close navigation" className="lg:hidden" onClick={() => setMobileNav(false)}>✕</button></div>
+      <div className="flex items-center justify-between"><Link href="/worker" className="text-2xl font-bold">Bridge<span className="text-blue-600">Point</span></Link><button aria-label="Close navigation" className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden" onClick={() => setMobileNav(false)}><Icon name="close" size={18} /></button></div>
       <p className="mb-7 text-xs text-slate-500">Work that matters. People who care.</p>
       <nav className="space-y-1">{links.map(([href, label]) => <Link key={href} href={href} onClick={() => setMobileNav(false)} className={(pathname === href ? "bg-blue-50 font-semibold text-blue-600 " : "text-slate-700 hover:bg-slate-50 ") + "block rounded-xl px-3 py-3 text-sm"}>{t(workerLabelKey[label] || label)}</Link>)}</nav>
       <button onClick={logout} className="mt-8 w-full rounded-xl border border-red-200 px-3 py-2 text-left text-sm text-red-600">{t("signOut")}</button>
     </aside>
     {mobileNav && <button aria-label="Close navigation overlay" className="fixed inset-0 z-30 bg-slate-900/20 lg:hidden" onClick={() => setMobileNav(false)} />}
     <main className="min-w-0 flex-1"><header className="sticky top-0 z-20 flex items-center justify-between border-b bg-white/90 px-5 py-4 backdrop-blur">
-      <button aria-label="Open navigation" className="mr-3 rounded-lg border px-3 py-2 lg:hidden" onClick={() => setMobileNav(true)}>☰</button><Link href="/worker" className="text-xl font-bold lg:hidden">Bridge<span className="text-blue-600">Point</span></Link>
-      <div className="ml-auto flex items-center gap-4 text-sm"><span className="hidden md:block">⌖ {user.city || "Chennai"}</span><span>{name}</span><Link href="/worker/profile" className="text-blue-600">Profile</Link></div>
+      <button aria-label="Open navigation" className="mr-3 rounded-lg border px-3 py-2 lg:hidden" onClick={() => setMobileNav(true)}><span className="block h-4 w-4 border-y-2 border-slate-700" /></button><Link href="/worker" className="text-xl font-bold lg:hidden">Bridge<span className="text-blue-600">Point</span></Link>
+      <div className="ml-auto flex items-center gap-4 text-sm"><span className="hidden md:block">{user.city || "Chennai"}</span><span>{name}</span><Link href="/worker/profile" className="text-blue-600">Profile</Link></div>
     </header><div className="mx-auto max-w-6xl space-y-5 p-5 md:p-8"><div><p className="text-sm font-medium text-blue-600">BridgePoint / Worker</p><h1 className="mt-1 text-3xl font-bold">{title}</h1><p className="mt-1 text-slate-500">Your worker workspace, connected to your BridgePoint account.</p></div>{renderDataSection()}</div></main>
   </div></div>;
 }

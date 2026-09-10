@@ -40,7 +40,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-[var(--color-bp-white)]" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif" }}>
+      <body className="min-h-screen bg-[var(--color-bp-white)]">
         <AuthProvider>
           <LanguageProvider>
             <CallProvider>

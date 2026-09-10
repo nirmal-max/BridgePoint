@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { Job, STATUS_LABELS, STATUS_COLORS, WORK_DESCRIPTIONS, JOB_CATEGORIES } from "@/lib/types";
 import { Suspense } from "react";
+import Icon from "@/components/Icon";
 
 function JobsContent() {
   const searchParams = useSearchParams();
@@ -111,7 +112,7 @@ function JobsContent() {
           </div>
         ) : jobs.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-5xl mb-4">📭</div>
+            <div className="mb-4 text-blue-700"><Icon name="search" size={34} className="mx-auto" /></div>
             <h3 className="text-xl font-semibold text-[var(--color-bp-black)] mb-2">
               No jobs found
             </h3>
@@ -143,10 +144,10 @@ function JobsContent() {
                       {wdLabel(job.work_description)}
                     </span>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--color-bp-gray-100)] text-[var(--color-bp-gray-700)]">
-                      📍 {job.city}
+                      {job.city}
                     </span>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium bg-[var(--color-bp-gray-100)] text-[var(--color-bp-gray-700)]">
-                      {job.location_type === "online" ? "🌐 Online" : "📌 Offline"}
+                      {job.location_type === "online" ? "Online" : "Offline"}
                     </span>
                   </div>
                   <p className="text-sm text-[var(--color-bp-gray-500)] line-clamp-2 mb-3">

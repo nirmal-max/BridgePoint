@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getActiveWorkspaceRole, useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import Icon from "@/components/Icon";
 
 const NAV = [
   ["/admin", "Dashboard"], ["/admin/federation", "Federation"], ["/admin/societies", "Societies"], ["/admin/members", "Members / Workers"],
@@ -70,14 +71,14 @@ export default function CooperativeDashboard() {
         <div className="flex-1 xl:ml-0">
           <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
             <div className="px-4 md:px-6 py-4 flex items-center gap-3">
-              <button className="xl:hidden px-3 py-2 rounded-xl border" onClick={() => setSidebar(v => !v)}>☰</button>
+              <button aria-label="Toggle navigation" className="xl:hidden px-3 py-2 rounded-xl border" onClick={() => setSidebar(v => !v)}><span className="block h-0.5 w-5 bg-slate-700 shadow-[0_-6px_0_#334155,0_6px_0_#334155]" /></button>
               <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-sm text-slate-600">{user?.city || "Cooperative workspace"}</div>
               <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-2xl border bg-white text-slate-400">
                 <span>⌕</span>
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search workers, jobs, reports..." className="w-full outline-none text-slate-700" />
               </div>
-              <button aria-label="Show notifications" onClick={() => setNotify(v => !v)} className="px-3 py-2 rounded-xl border bg-white">🔔</button>
-              <Link aria-label="Open cooperative messages" href="/admin/messages" className="px-3 py-2 rounded-xl border bg-white">💬</Link>
+              <button aria-label="Show notifications" onClick={() => setNotify(v => !v)} className="px-3 py-2 rounded-xl border bg-white text-slate-600"><Icon name="bell" size={18} /></button>
+              <Link aria-label="Open cooperative messages" href="/admin/messages" className="px-3 py-2 rounded-xl border bg-white text-slate-600"><Icon name="chat" size={18} /></Link>
               <button onClick={() => setProfile(v => !v)} className="flex items-center gap-3 px-3 py-2 rounded-2xl border bg-white">
                 <span className="h-10 w-10 rounded-full bg-blue-600 text-white grid place-items-center font-semibold">{(user?.full_name || "CE").split(" ").map(s => s[0]).slice(0,2).join("") || "CE"}</span>
                 <span className="hidden md:block text-left"><div className="text-sm font-medium">{user?.full_name || "Cooperative workspace"}</div><div className="text-xs text-slate-500">Admin</div></span>
@@ -104,7 +105,7 @@ export default function CooperativeDashboard() {
             {demoWarning && <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{demoWarning}</div>}
             {jobsError && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">Cooperative job data unavailable: {jobsError}</div>}
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {KPIS.map(([label, note], i) => { const live = overview ? [overview.members, overview.verified_workers, overview.active_jobs, `₹${overview.cooperative_revenue.toLocaleString("en-IN")}`][i] : null; return <div key={label} className="rounded-[24px] border border-slate-200 bg-white p-5"><div className="text-3xl mb-3">{["👥","🛡️","📅","₹"][i]}</div><div className="text-3xl font-semibold">{live ?? "Loading..."}</div><div className="text-slate-600">{label}</div><div className="mt-2 text-slate-500 text-sm">{overview ? "Live from backend reporting" : note}</div></div>; })}
+              {KPIS.map(([label, note], i) => { const live = overview ? [overview.members, overview.verified_workers, overview.active_jobs, `₹${overview.cooperative_revenue.toLocaleString("en-IN")}`][i] : null; const icons = ["users", "shield", "calendar", "card"] as const; return <div key={label} className="rounded-[24px] border border-slate-200 bg-white p-5"><div className="mb-3 text-blue-700"><Icon name={icons[i]} size={22} /></div><div className="text-3xl font-semibold">{live ?? "Loading..."}</div><div className="text-slate-600">{label}</div><div className="mt-2 text-slate-500 text-sm">{overview ? "Live from backend reporting" : note}</div></div>; })}
             </section>
 
             <section className="grid xl:grid-cols-2 gap-4">

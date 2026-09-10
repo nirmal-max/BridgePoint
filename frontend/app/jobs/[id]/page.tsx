@@ -15,6 +15,7 @@ import {
 import CallButton from "@/components/CallButton";
 import ProgressBar from "@/components/ProgressBar";
 import ChatPanel from "@/components/ChatPanel";
+import Icon from "@/components/Icon";
 
 // Who can trigger each work stage transition
 const NEXT_STATUS: Record<string, { target: string; allowedRole: "labor" | "employer" | "both" }> = {
@@ -192,7 +193,7 @@ export default function JobDetailPage() {
     return (
       <div className="pt-14 min-h-screen bg-[var(--color-bp-gray-100)] flex items-center justify-center">
         <div className="text-center">
-          <div className="text-5xl mb-4">🔍</div>
+          <div className="mb-4 text-blue-700"><Icon name="search" size={34} className="mx-auto" /></div>
           <h2 className="text-2xl font-semibold text-[var(--color-bp-black)]">Job not found</h2>
         </div>
       </div>
@@ -396,7 +397,7 @@ export default function JobDetailPage() {
           {/* Task already assigned indicator */}
           {!isOwner && !isAllottedLabor && job.status !== "posted" && job.allotted_labor_id && (
             <div className="card !p-8 text-center bg-gray-50 border-gray-200">
-              <div className="text-4xl mb-3">🔒</div>
+              <div className="mb-3 text-blue-700"><Icon name="lock" size={28} className="mx-auto" /></div>
               <h3 className="text-lg font-semibold text-[var(--color-bp-black)] mb-1">Already Assigned</h3>
               <p className="text-[var(--color-bp-gray-500)]">
                 This task has been claimed by another worker.
@@ -425,7 +426,7 @@ export default function JobDetailPage() {
           {isOwner && job.status === "work_completed" && (
             <div className="card !p-6">
               <h3 className="text-lg font-semibold text-[var(--color-bp-black)] mb-3">
-                💳 Initiate Payment
+                <span className="inline-flex items-center gap-2"><Icon name="card" size={16} />Initiate Payment</span>
               </h3>
               <p className="text-sm text-[var(--color-bp-gray-500)] mb-4">
                 Pay ₹{job.budget.toFixed(0)} to the BridgePoint platform. Worker receives ₹{job.budget.toFixed(0)} after verification.
@@ -467,7 +468,7 @@ export default function JobDetailPage() {
           {isOwner && job.status === "payment_in_process" && (
             <div className="card !p-6 text-center">
               <h3 className="text-lg font-semibold text-[var(--color-bp-black)] mb-4">
-                📲 Scan & Pay
+                <span className="inline-flex items-center gap-2"><Icon name="card" size={16} />Scan &amp; Pay</span>
               </h3>
 
               <p className="mb-4 text-sm text-[var(--color-bp-gray-600)]">
@@ -524,7 +525,7 @@ export default function JobDetailPage() {
                 disabled={actionLoading || upiRef.length < 12}
                 className="btn-primary w-full !py-4"
               >
-                {actionLoading ? "Marking..." : "✓ I Have Sent the Payment"}
+                {actionLoading ? "Marking..." : "I Have Sent the Payment"}
               </button>
             </div>
           )}
@@ -532,7 +533,7 @@ export default function JobDetailPage() {
           {/* Step 3: Verification Pending — Employer waiting */}
           {isOwner && job.status === "verification_pending" && (
             <div className="card !p-8 text-center bg-yellow-50 border-yellow-100">
-              <div className="text-4xl mb-3">⏳</div>
+              <div className="mb-3 text-amber-700"><Icon name="calendar" size={30} className="mx-auto" /></div>
               <h3 className="text-lg font-semibold text-yellow-700 mb-1">Payment Sent</h3>
               <p className="text-sm text-yellow-600">
                 Awaiting platform verification. We will confirm receipt shortly.
@@ -548,7 +549,7 @@ export default function JobDetailPage() {
           {/* Verified — waiting for payout release */}
           {isOwner && job.status === "verified" && (
             <div className="card !p-8 text-center bg-indigo-50 border-indigo-100">
-              <div className="text-4xl mb-3">✓</div>
+              <div className="mb-3 text-emerald-700"><Icon name="check" size={30} className="mx-auto" /></div>
               <h3 className="text-lg font-semibold text-indigo-700 mb-1">Payment Verified!</h3>
               <p className="text-sm text-indigo-600">
                 ₹{job.employer_total.toFixed(2)} received. Worker payout of ₹{job.worker_payout.toFixed(2)} will be released shortly.
@@ -559,7 +560,7 @@ export default function JobDetailPage() {
           {/* Laborer waiting states */}
           {isAllottedLabor && job.status === "work_completed" && (
             <div className="card !p-8 text-center bg-blue-50 border-blue-100">
-              <div className="text-4xl mb-3">🎉</div>
+              <div className="mb-3 text-emerald-700"><Icon name="check" size={30} className="mx-auto" /></div>
               <h3 className="text-lg font-semibold text-[var(--color-bp-blue)] mb-1">Work Completed!</h3>
               <p className="text-sm text-blue-600 font-medium">
                 Waiting for employer to pay.
@@ -569,7 +570,7 @@ export default function JobDetailPage() {
 
           {isAllottedLabor && ["payment_in_process", "verification_pending"].includes(job.status) && (
             <div className="card !p-8 text-center bg-yellow-50 border-yellow-100">
-              <div className="text-4xl mb-3">⏳</div>
+              <div className="mb-3 text-amber-700"><Icon name="calendar" size={30} className="mx-auto" /></div>
               <h3 className="text-lg font-semibold text-yellow-700 mb-1">Payment in Progress</h3>
               <p className="text-sm text-yellow-600">
                 Employer has initiated payment. Platform is verifying.
@@ -583,7 +584,7 @@ export default function JobDetailPage() {
           {/* Payment Completed — Final State */}
           {(isOwner || isAllottedLabor) && ["payout_released", "payment_completed"].includes(job.status) && (
             <div className="card !p-8 text-center bg-emerald-50 border-emerald-100">
-              <div className="text-4xl mb-3">🎉</div>
+              <div className="mb-3 text-emerald-700"><Icon name="check" size={30} className="mx-auto" /></div>
               <h3 className="text-lg font-semibold text-emerald-700 mb-1">Payment Completed!</h3>
               <p className="text-sm text-emerald-600">
                 {isAllottedLabor
@@ -602,7 +603,7 @@ export default function JobDetailPage() {
           {user?.is_admin && job.status === "verification_pending" && (
             <div className="card !p-6 bg-purple-50 border-purple-100">
               <h3 className="text-lg font-semibold text-purple-800 mb-3">
-                🔐 Admin: Verify & Release Payout
+                <span className="inline-flex items-center gap-2"><Icon name="lock" size={16} />Admin: Verify &amp; Release Payout</span>
               </h3>
               <div className="text-sm text-purple-600 mb-4 space-y-1">
                 <div>Budget: ₹{job.budget.toFixed(2)}</div>
@@ -621,7 +622,7 @@ export default function JobDetailPage() {
           {user?.is_admin && job.status === "verified" && (
             <div className="card !p-6 bg-purple-50 border-purple-100">
               <h3 className="text-lg font-semibold text-purple-800 mb-3">
-                🔐 Admin: Release Payout
+                <span className="inline-flex items-center gap-2"><Icon name="lock" size={16} />Admin: Release Payout</span>
               </h3>
               <div className="text-sm text-purple-600 mb-4">
                 Payment verified. Release ₹{job.worker_payout.toFixed(2)} to worker.
@@ -639,7 +640,7 @@ export default function JobDetailPage() {
           {user?.is_admin && job.status === "payout_released" && (
             <div className="card !p-6 bg-purple-50 border-purple-100">
               <h3 className="text-lg font-semibold text-purple-800 mb-3">
-                🔐 Admin: Mark Job Completed
+                <span className="inline-flex items-center gap-2"><Icon name="check" size={16} />Admin: Mark Job Completed</span>
               </h3>
               <div className="text-sm text-purple-600 mb-4">
                 Worker has received ₹{job.worker_payout.toFixed(2)}. Finalize this job.
@@ -667,7 +668,7 @@ export default function JobDetailPage() {
                 onClick={handleAddFavorite}
                 className="btn-secondary w-full !py-3"
               >
-                ⭐ Save Worker to Favorites
+                <span className="inline-flex items-center gap-2"><Icon name="star" size={16} />Save Worker to Favorites</span>
               </button>
             )}
         </div>
