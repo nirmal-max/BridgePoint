@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models.user import User
 from app.services.demand_forecasting import MAX_FORECAST_DAYS, forecast_demand
 from app.services.workforce_allocation import build_workforce_allocation
-from app.utils.deps import require_cooperative
+from app.utils.deps import get_current_user, require_cooperative
 
 router = APIRouter(prefix="/api/forecast", tags=["Forecasting"])
 
@@ -20,7 +20,7 @@ def demand(
     skill: str = Query(..., min_length=1, max_length=100),
     days: int = Query(default=7, ge=1, le=MAX_FORECAST_DAYS),
     db: Session = Depends(get_db),
-    _: User = Depends(require_cooperative),
+    _: User = Depends(get_current_user),
 ):
     try:
         return forecast_demand(db, city, skill, days)
