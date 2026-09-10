@@ -1,16 +1,22 @@
 /* ─── Bridge Point — API Client ─── */
 
-// Ignore any retired Railway value that may still be present in a deployment.
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-let API_BASE =
-  configuredApiUrl && !/railway\.app/i.test(configuredApiUrl)
-    ? configuredApiUrl
-    : process.env.NODE_ENV === "production"
-      ? "https://bridge-point.onrender.com"
-      : "http://127.0.0.1:8000";
+// In the browser, always use a relative base so requests go through the
+// Next.js rewrite proxy (/api/* → FastAPI). This means:
+//   - No cross-origin fetch, no CORS preflight from the browser
+//   - No IP/host baked into the JS bundle that can go stale
+//   - Service worker /api/ bypass always fires (same-origin pathname check)
+//
+// Server-side (SSR, route handlers) we need the absolute backend URL
+// because there is no browser proxy to relay requests through.
+const API_BASE: string =
+  typeof window === 'undefined'
+    ? // Server context: use env var or fallback to loopback
+      (process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/$/, '') ||
+        'http://127.0.0.1:8000')
+    : // Browser context: same-origin relative — proxied by Next.js rewrites
+      '';
 
-// Remove trailing slash
-API_BASE = API_BASE.replace(/\/$/, '');
+
 
 class ApiClient {
   private getToken(): string | null {
@@ -37,14 +43,24 @@ class ApiClient {
     });
 
     if (!res.ok) {
-      // Token expired or invalid — clear auth and redirect to login
-      if (res.status === 401 && typeof window !== "undefined") {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      const isAuthEndpoint =
+        path.startsWith("/api/auth/login") ||
+        path.startsWith("/api/auth/register");
+
+      // Token expired or invalid on protected routes — clear stale auth
+      if (res.status === 401 && !isAuthEndpoint && typeof window !== "undefined") {
+        const hadToken = !!localStorage.getItem("bp_token");
         localStorage.removeItem("bp_token");
         localStorage.removeItem("bp_user");
-        window.location.href = "/login";
-        throw new Error("Session expired. Please log in again.");
+        if (
+          hadToken &&
+          !window.location.pathname.startsWith("/login") &&
+          !window.location.pathname.startsWith("/register")
+        ) {
+          window.location.href = "/login";
+        }
       }
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
       throw new Error(err.detail || `API Error: ${res.status}`);
     }
 

@@ -33,7 +33,32 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(function(reg) {
+                      // When a new SW is found, wait for it to install then reload.
+                      reg.addEventListener('updatefound', function() {
+                        var newSW = reg.installing;
+                        if (!newSW) return;
+                        newSW.addEventListener('statechange', function() {
+                          // New SW has activated and the old one is gone.
+                          if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+                            // Reload to let the new SW take over cleanly.
+                            window.location.reload();
+                          }
+                        });
+                      });
+                    })
+                    .catch(function(err) {
+                      console.warn('[SW] Registration failed:', err);
+                    });
+
+                  // If the controller changes (new SW took over), reload once.
+                  var refreshing = false;
+                  navigator.serviceWorker.addEventListener('controllerchange', function() {
+                    if (refreshing) return;
+                    refreshing = true;
+                    window.location.reload();
+                  });
                 });
               }
             `,
