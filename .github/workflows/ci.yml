@@ -35,3 +35,4 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt
       - run: python -m compileall -q app
+      - run: python -m unittest discover -s tests -p "test_*.py"
