@@ -49,6 +49,7 @@ The worker and customer feature layer uses persisted, authenticated records for 
 - Notifications: GET /api/notifications and PATCH /api/notifications/{id}/read
 - Emergency requests: POST /api/emergency, GET /api/emergency/mine, GET /api/emergency/open, POST /api/emergency/{id}/respond, PATCH /api/emergency/{id}/status
 - Wage benchmark: GET /api/wage-benchmark, using recorded BridgePoint jobs only
+- Provider verification: GET /api/workers/me/provider-verification, GET /api/cooperative/provider-verification, and cooperative-only verify/reject actions under /api/providers/{worker_id}
 
 New tables use the existing SQLAlchemy create_all and safe SQLite schema initialization. No tables are dropped or reset. Welfare and insurance screens show honest empty states until real records exist; no government or external insurance integration is claimed.
 
