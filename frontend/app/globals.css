@@ -130,6 +130,97 @@ h6 {
   color: white;
 }
 
+.btn-ghost {
+  background: transparent;
+  color: var(--color-bp-gray-700);
+  padding: 10px 20px;
+  border-radius: 980px;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid var(--color-bp-gray-200);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-ghost:hover {
+  background: var(--color-bp-gray-100);
+  border-color: var(--color-bp-gray-300);
+}
+
+.btn-danger {
+  background: var(--color-bp-red);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 980px;
+  font-size: 17px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-danger:hover {
+  background: #991b1b;
+  transform: scale(1.02);
+}
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── Sidebar Navigation ─── */
+.sidebar-nav-link {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--color-bp-gray-700);
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+.sidebar-nav-link:hover {
+  background: var(--color-bp-gray-100);
+}
+.sidebar-nav-link-active {
+  background: #eff6ff;
+  color: var(--color-bp-blue);
+  font-weight: 600;
+}
+
+/* ─── Status Badges ─── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 980px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.badge-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+.badge-warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+.badge-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.badge-info {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
 /* ─── Card Styles ─── */
 .card {
   background: white;

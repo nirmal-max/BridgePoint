@@ -49,7 +49,7 @@ export default function Header() {
                 Dashboard
               </Link>
               {(currentUser.is_admin || currentUser.roles?.includes("cooperative")) && (
-                <Link href="/admin" className="hover:text-purple-700 transition-colors text-purple-600">
+                <Link href="/admin" className="hover:text-[var(--color-bp-blue-hover)] transition-colors text-[var(--color-bp-blue)] font-medium">
                   Admin
                 </Link>
               )}
@@ -109,7 +109,7 @@ export default function Header() {
               <>
                 <Link href={dashboardHref} onClick={() => setMenuOpen(false)}>Dashboard</Link>
                 {(currentUser.is_admin || currentUser.roles?.includes("cooperative")) && (
-                  <Link href="/admin" onClick={() => setMenuOpen(false)} className="text-purple-600">Admin Panel</Link>
+                  <Link href="/admin" onClick={() => setMenuOpen(false)} className="text-[var(--color-bp-blue)] font-medium">Admin Panel</Link>
                 )}
                 <button onClick={() => { logout(); setMenuOpen(false); }} className="text-left text-[var(--color-bp-red)]">
                   Sign Out
