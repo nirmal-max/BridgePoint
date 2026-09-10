@@ -59,18 +59,23 @@ def calculate_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) ->
     return radius_km * (2 * atan2(sqrt(value), sqrt(max(0.0, 1 - value))))
 
 
-def _skill_score_for_request(user: User, requested_skill: str | None) -> float:
+def _skill_score_for_values(values: list[str], requested_skill: str | None) -> float:
     requested = _normalise(requested_skill)
     if not requested:
         return 0.0
     requested_group = next((group for group, aliases in SKILL_TAXONOMY.items() if requested in aliases or group in requested), None)
     best = 0.0
-    for skill in _skills(user):
+    for skill in values:
+        skill = _normalise(skill)
         if skill == requested:
             best = max(best, 1.0)
         elif requested_group and (skill == requested_group or skill in SKILL_TAXONOMY[requested_group]):
             best = max(best, 0.8)
     return best
+
+
+def _skill_score_for_request(user: User, requested_skill: str | None) -> float:
+    return _skill_score_for_values(_skills(user), requested_skill)
 
 
 def _skill_score(user: User, job: Job) -> float:
@@ -120,7 +125,14 @@ def _score_worker_signals(worker: User, requested_skill: str | None, city: str |
         return None
 
     required = _normalise(requested_skill)
-    verified_certification = 1.0 if not required else (1.0 if db.query(Certification).filter(Certification.worker_id == worker.id, Certification.verification_status == "VERIFIED").count() else 0.0)
+    verified_certifications = db.query(Certification).filter(
+        Certification.worker_id == worker.id,
+        Certification.verification_status == "VERIFIED",
+    ).all()
+    verified_certification = 1.0 if not required else (
+        1.0 if any(_skill_score_for_values([certification.name], requested_skill) > 0 for certification in verified_certifications)
+        else 0.0
+    )
     rating_score = _rating_score(worker, db)
     reliability_score = _reliability_score(worker, db)
     recent_jobs = db.query(Job).filter(Job.allotted_labor_id == worker.id).count()

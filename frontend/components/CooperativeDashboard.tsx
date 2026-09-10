@@ -16,7 +16,7 @@ const NAV = [
 
 const KPIS = [
   ["Total Members", "Worker records from the cooperative API"],
-  ["Verified Workers", "Email and phone verification status"],
+  ["Verified Workers", "Provider verification status"],
   ["Active Jobs", "Current job state totals"],
   ["Cooperative Earnings", "Recorded platform commission"],
 ];
@@ -120,7 +120,7 @@ export default function CooperativeDashboard() {
                 </div>
                 <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_210px] gap-4">
                   <div className="rounded-3xl border bg-gradient-to-b from-white to-blue-50 p-4">
-                    <div className="mb-3 text-sm text-slate-500">Calculated from the last 30 days of jobs. Location: all recorded locations.</div>
+                    <div className="mb-3 text-sm text-slate-500">Prophet forecast from historical BridgePoint service requests across recorded locations.</div>
                     <div className="space-y-3">{forecastRows.length ? forecastRows.slice(0, 8).map((row) => <div key={row.skill} className="flex items-center justify-between rounded-2xl bg-white/80 px-4 py-3"><span className="font-medium">{row.skill}</span><span className="text-right"><strong>{row.predicted_jobs}</strong> jobs<br /><small className="text-slate-500">{row.confidence} confidence</small></span></div>) : <div className="py-12 text-center text-sm text-slate-500">No recent job history is available for forecasting.</div>}</div>
                   </div>
                   <div className="space-y-3">

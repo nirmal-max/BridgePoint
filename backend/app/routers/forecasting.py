@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models.user import User
 from app.services.demand_forecasting import MAX_FORECAST_DAYS, forecast_demand
 from app.services.workforce_allocation import build_workforce_allocation
-from app.utils.deps import get_current_user, require_cooperative
+from app.utils.deps import require_cooperative, require_employer
 
 router = APIRouter(prefix="/api/forecast", tags=["Forecasting"])
 
@@ -20,10 +20,32 @@ def demand(
     skill: str = Query(..., min_length=1, max_length=100),
     days: int = Query(default=7, ge=1, le=MAX_FORECAST_DAYS),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_cooperative),
 ):
     try:
         return forecast_demand(db, city, skill, days)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.get("/customer-demand")
+def customer_demand(
+    city: str = Query(..., min_length=1, max_length=100),
+    skill: str = Query(..., min_length=1, max_length=100),
+    days: int = Query(default=7, ge=1, le=MAX_FORECAST_DAYS),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_employer),
+):
+    try:
+        result = forecast_demand(db, city, skill, days)
+        return {
+            "status": result["status"],
+            "city": result["city"],
+            "skill": result["skill"],
+            "history_days": result["history_days"],
+            "minimum_history_days": result["minimum_history_days"],
+            "forecast": result["forecast"],
+        }
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

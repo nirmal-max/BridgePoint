@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.feature import Certification, EmergencyRequest, InsurancePolicy, Invoice, JobLocation, Notification, WelfareRecord, WorkerAvailability, WorkerLocation
 from app.models.job import Job
+from app.models.organization import CooperativeMembership, Federation, MembershipStatus, Society
 from app.models.user import User, UserRole
 from app.models.commission import CommissionLedger
 from app.schemas.features import (
@@ -126,6 +127,16 @@ def provider_verification_payload(worker: User) -> dict:
     }
 
 
+def worker_is_in_cooperative_scope(worker_id: int, current_user: User, db: Session) -> bool:
+    if current_user.is_admin:
+        return True
+    return db.query(CooperativeMembership).join(Society).join(Federation).filter(
+        CooperativeMembership.user_id == worker_id,
+        CooperativeMembership.status.in_((MembershipStatus.PENDING, MembershipStatus.ACTIVE)),
+        or_(Society.admin_user_id == current_user.id, Federation.admin_user_id == current_user.id),
+    ).first() is not None
+
+
 @router.get("/api/workers/me/provider-verification", response_model=ProviderVerificationResponse)
 def get_provider_verification(
     db: Session = Depends(get_db), current_user: User = Depends(require_labor)
@@ -140,7 +151,7 @@ def list_provider_verification(
     workers = db.query(User).filter(
         or_(User.roles.contains('"labor"'), User.labor_category.isnot(None))
     ).order_by(User.full_name.asc()).all()
-    return [provider_verification_payload(worker) for worker in workers]
+    return [provider_verification_payload(worker) for worker in workers if worker_is_in_cooperative_scope(worker.id, current_user, db)]
 
 
 def update_provider_verification(
@@ -151,6 +162,8 @@ def update_provider_verification(
     worker = db.query(User).filter(User.id == worker_id).first()
     if not worker or not (UserRole.LABOR.value in roles(worker) or worker.labor_category is not None):
         raise HTTPException(404, "Worker not found")
+    if not worker_is_in_cooperative_scope(worker_id, current_user, db):
+        raise HTTPException(403, "Worker is not a member of your cooperative")
     worker.provider_verification_status = new_status
     db.commit()
     db.refresh(worker)
@@ -204,6 +217,8 @@ def verify_certification(certification_id: int, db: Session = Depends(get_db), c
     item = db.query(Certification).filter(Certification.id == certification_id).first()
     if not item:
         raise HTTPException(404, "Certification not found")
+    if not worker_is_in_cooperative_scope(item.worker_id, current_user, db):
+        raise HTTPException(403, "Worker is not a member of your cooperative")
     item.verification_status = "VERIFIED"
     item.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -214,7 +229,7 @@ def verify_certification(certification_id: int, db: Session = Depends(get_db), c
 @router.get("/api/cooperative/certifications")
 def list_certification_queue(db: Session = Depends(get_db), current_user: User = Depends(require_cooperative)):
     rows = db.query(Certification, User.full_name).join(User, User.id == Certification.worker_id).order_by(Certification.created_at.desc()).all()
-    return [{**certification_payload(item), "worker_name": worker_name} for item, worker_name in rows]
+    return [{**certification_payload(item), "worker_name": worker_name} for item, worker_name in rows if worker_is_in_cooperative_scope(item.worker_id, current_user, db)]
 
 
 @router.get("/api/workers/me/welfare", response_model=list[WelfareResponse])
@@ -302,7 +317,7 @@ async def create_emergency(payload: EmergencyCreate, db: Session = Depends(get_d
     item = EmergencyRequest(customer_id=current_user.id, **payload.model_dump())
     db.add(item)
     db.flush()
-    workers = db.query(User).filter(User.city == payload.city).all()
+    workers = db.query(User).filter(User.city == payload.city, User.provider_verification_status == "VERIFIED").all()
     worker_ids = [worker.id for worker in workers if "labor" in roles(worker) or worker.labor_category]
     for worker_id in worker_ids:
         notify(db, worker_id, "emergency", "Emergency request nearby", f"{payload.category} emergency request in {payload.city}.", "/worker/available-jobs")
@@ -318,11 +333,15 @@ def list_my_emergencies(db: Session = Depends(get_db), current_user: User = Depe
 
 @router.get("/api/emergency/open", response_model=list[EmergencyResponse])
 def list_open_emergencies(db: Session = Depends(get_db), current_user: User = Depends(require_labor)):
+    if current_user.provider_verification_status != "VERIFIED":
+        return []
     return db.query(EmergencyRequest).filter(EmergencyRequest.status == "open", EmergencyRequest.city == current_user.city).order_by(EmergencyRequest.created_at.desc()).all()
 
 
 @router.post("/api/emergency/{request_id}/respond", response_model=EmergencyResponse)
 async def respond_emergency(request_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_labor)):
+    if current_user.provider_verification_status != "VERIFIED":
+        raise HTTPException(403, "Only verified service providers can respond to emergencies")
     item = db.query(EmergencyRequest).filter(EmergencyRequest.id == request_id, EmergencyRequest.status == "open", EmergencyRequest.city == current_user.city).first()
     if not item:
         raise HTTPException(404, "Emergency request is not available")

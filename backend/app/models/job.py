@@ -85,8 +85,8 @@ class Job(Base):
     platform_earning_paise = Column(Integer, nullable=False, default=0)
 
     # ─── Platform Custody Payment Fields ─────────────────
-    platform_commission_paise = Column(Integer, nullable=False, default=0)   # budget × 0.03
-    worker_payout_paise = Column(Integer, nullable=False, default=0)         # budget × 0.97
+    platform_commission_paise = Column(Integer, nullable=False, default=0)   # derived from configured commission rates
+    worker_payout_paise = Column(Integer, nullable=False, default=0)         # budget less labor commission
     payment_status = Column(String(30), nullable=True, default="pending")    # pending/verification_pending/verified/payout_released
     payment_sent_at = Column(DateTime, nullable=True)                        # When employer marked payment sent
     payout_released_at = Column(DateTime, nullable=True)                     # When admin released payout

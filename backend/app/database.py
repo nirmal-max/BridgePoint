@@ -55,7 +55,18 @@ class Base(DeclarativeBase):
 
 
 def migrate_sqlite_schema() -> None:
-    """Add safe, optional model columns to an existing local SQLite database."""
+    """Add safe model columns to existing local SQLite/PostgreSQL databases."""
+    if DATABASE_URL.startswith(("postgresql", "postgres")):
+        inspector = inspect(engine)
+        if inspector.has_table("users") and "provider_verification_status" not in {
+            column["name"] for column in inspector.get_columns("users")
+        }:
+            with engine.begin() as connection:
+                connection.execute(text(
+                    "ALTER TABLE users ADD COLUMN provider_verification_status "
+                    "VARCHAR(20) NOT NULL DEFAULT 'VERIFIED'"
+                ))
+        return
     if not DATABASE_URL.startswith("sqlite"):
         return
 

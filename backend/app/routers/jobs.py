@@ -356,11 +356,17 @@ def update_job_status(
 
 
 @router.get("/{job_id}/transitions")
-def get_job_transitions(job_id: int, db: Session = Depends(get_db)):
+def get_job_transitions(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Get full timestamped transition history for a job."""
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    if not current_user.is_admin and current_user.id not in {job.employer_id, job.allotted_labor_id}:
+        raise HTTPException(status_code=403, detail="Only job participants can view transition history")
 
     transitions = (
         db.query(StatusTransition)
@@ -465,6 +471,12 @@ async def accept_task(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot accept your own task",
+        )
+
+    if current_user.provider_verification_status != "VERIFIED":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only verified service providers can accept jobs",
         )
 
     # Security: only posted jobs can be accepted

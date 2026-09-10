@@ -411,7 +411,7 @@ class ApiClient {
   }[] }>("/api/cooperative/workforce"); }
   getForecastDemand(city: string, skill: string, days = 7) {
     const query = new URLSearchParams({ city, skill, days: String(days) });
-    return this.request<import("./types").DemandForecastResponse>(`/api/forecast/demand?${query}`);
+    return this.request<import("./types").DemandForecastResponse>(`/api/forecast/customer-demand?${query}`);
   }
   getForecastWorkforce(city: string, skill: string, date: string) {
     const query = new URLSearchParams({ city, skill, date });

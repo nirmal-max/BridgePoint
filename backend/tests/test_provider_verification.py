@@ -1,6 +1,7 @@
 import json
 import unittest
-from datetime import date
+import asyncio
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -12,8 +13,11 @@ import app.main  # noqa: F401 - register all models before metadata creation
 from app.main import app
 from app.database import Base
 from app.models.feature import Certification, WorkerAvailability
+from app.models.job import Job, JobCategory, LocationType, OrganizationType, TimeSpan
+from app.models.organization import CooperativeMembership, Federation, MembershipStatus, Society
 from app.models.user import LaborCategory, User
 from app.routers.features import reject_provider, verify_provider
+from app.routers.jobs import accept_task
 from app.services.matching import WorkforceRequirement, rank_workers_for_requirement
 from app.utils.deps import require_cooperative
 from app.database import get_db
@@ -51,11 +55,15 @@ class ProviderVerificationTests(unittest.TestCase):
             email="cooperative@example.com", phone="9110000004", password_hash="x",
             full_name="Cooperative Admin", roles=json.dumps(["cooperative"]), is_admin=True,
         )
+        self.cooperative = User(
+            email="society@example.com", phone="9110000006", password_hash="x",
+            full_name="Society Admin", roles=json.dumps(["cooperative"]),
+        )
         self.customer = User(
             email="customer@example.com", phone="9110000005", password_hash="x",
             full_name="Customer", roles=json.dumps(["employer"]),
         )
-        self.db.add_all([self.worker, self.pending, self.rejected, self.admin, self.customer])
+        self.db.add_all([self.worker, self.pending, self.rejected, self.admin, self.customer, self.cooperative])
         self.db.flush()
         self.db.add_all([
             WorkerAvailability(worker_id=self.worker.id, is_available=True),
@@ -89,6 +97,18 @@ class ProviderVerificationTests(unittest.TestCase):
         created = self.db.query(User).filter(User.email == "new-provider@example.com").one()
         self.assertEqual(created.provider_verification_status, "PENDING")
 
+    def test_public_cooperative_registration_is_rejected(self):
+        app.dependency_overrides[get_db] = self._override_db
+        response = self.client.post("/api/auth/register", json={
+            "email": "new-cooperative@example.com",
+            "phone": "9110000011",
+            "password": "password123",
+            "full_name": "New Cooperative",
+            "role": "cooperative",
+        })
+        self.assertEqual(response.status_code, 403)
+        self.assertIsNone(self.db.query(User).filter(User.email == "new-cooperative@example.com").first())
+
     def test_http_provider_authorization(self):
         app.dependency_overrides[get_db] = self._override_db
         app.dependency_overrides[get_current_user] = lambda: self.admin
@@ -111,6 +131,15 @@ class ProviderVerificationTests(unittest.TestCase):
         self.assertEqual([item["worker_id"] for item in matches], [self.worker.id])
         self.assertTrue(matches[0]["provider_verified"])
 
+    def test_verified_certificate_must_match_requested_skill(self):
+        self.db.add(Certification(
+            worker_id=self.worker.id, name="Painting safety", issuing_organization="Worker",
+            issue_date=date(2026, 1, 1), verification_status="VERIFIED",
+        ))
+        self.db.commit()
+        matches = rank_workers_for_requirement(WorkforceRequirement("plumber", "Chennai"), self.db)
+        self.assertFalse(matches[0]["certified"])
+
     def test_cooperative_can_verify_and_reject_but_worker_cannot_self_verify(self):
         verified = verify_provider(self.pending.id, db=self.db, current_user=self.admin)
         self.assertEqual(verified["status"], "VERIFIED")
@@ -119,6 +148,25 @@ class ProviderVerificationTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as error:
             verify_provider(self.rejected.id, db=self.db, current_user=self.rejected)
         self.assertEqual(error.exception.status_code, 403)
+
+    def test_regular_cooperative_is_limited_to_its_members(self):
+        with self.assertRaises(HTTPException) as error:
+            verify_provider(self.pending.id, db=self.db, current_user=self.cooperative)
+        self.assertEqual(error.exception.status_code, 403)
+
+        federation = Federation(name="Test Federation", admin_user_id=self.cooperative.id)
+        self.db.add(federation)
+        self.db.flush()
+        society = Society(name="Test Society", federation_id=federation.id, admin_user_id=self.cooperative.id)
+        self.db.add(society)
+        self.db.flush()
+        self.db.add(CooperativeMembership(
+            user_id=self.pending.id, society_id=society.id, membership_number="TEST-001",
+            status=MembershipStatus.PENDING,
+        ))
+        self.db.commit()
+        verified = verify_provider(self.pending.id, db=self.db, current_user=self.cooperative)
+        self.assertEqual(verified["status"], "VERIFIED")
 
     def test_non_cooperative_dependency_is_rejected(self):
         with self.assertRaises(HTTPException) as error:
@@ -135,6 +183,28 @@ class ProviderVerificationTests(unittest.TestCase):
         verify_provider(self.pending.id, db=self.db, current_user=self.admin)
         self.db.refresh(certification)
         self.assertEqual(certification.verification_status, "SELF_DECLARED")
+
+    def test_unverified_provider_cannot_bypass_matching_when_accepting(self):
+        job = Job(
+            employer_id=self.customer.id,
+            title="Plumbing request",
+            category=JobCategory.HOUSEHOLD,
+            work_description="plumbing",
+            role_description="Repair a leaking pipe",
+            required_skill="plumber",
+            city="Chennai",
+            location_type=LocationType.OFFLINE,
+            date_of_task=datetime.now(timezone.utc) + timedelta(days=1),
+            time_span=TimeSpan.FEW_HOURS,
+            organization_type=OrganizationType.INDIVIDUAL,
+            budget_paise=10000,
+            status="posted",
+        )
+        self.db.add(job)
+        self.db.commit()
+        with self.assertRaises(HTTPException) as error:
+            asyncio.run(accept_task(job.id, db=self.db, current_user=self.pending))
+        self.assertEqual(error.exception.status_code, 403)
 
 
 if __name__ == "__main__":

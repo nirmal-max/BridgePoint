@@ -23,8 +23,8 @@ class Payment(Base):
 
     # ─── Financial Fields (all in paise) ────────────────
     amount_total_paise = Column(Integer, nullable=False)          # What employer paid (= budget)
-    platform_commission_paise = Column(Integer, nullable=False)   # Platform earning (3%)
-    worker_payout_paise = Column(Integer, nullable=False)         # What worker receives (97%)
+    platform_commission_paise = Column(Integer, nullable=False)   # Platform earning from configured commissions
+    worker_payout_paise = Column(Integer, nullable=False)         # Worker payout after configured labor commission
 
     # ─── Status ─────────────────────────────────────────
     # pending → paid → payout_initiated → payout_completed → failed

@@ -5,11 +5,14 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.job import Job
 from app.models.user import User
+from app.services.demand_forecasting import forecast_demand
+from app.services.workforce_allocation import build_workforce_allocation
 from app.utils.deps import require_cooperative
 
 router = APIRouter(prefix="/api/cooperative", tags=["Cooperative"])
@@ -27,29 +30,40 @@ def _skills(user: User) -> list[str]:
 
 
 def _worker_query(db: Session):
-    return db.query(User).filter(User.labor_category.isnot(None))
+    return db.query(User).filter(or_(User.labor_category.isnot(None), User.roles.contains('"labor"')))
 
 
 def _forecast(db: Session, days: int = 7, location: str | None = None) -> list[dict]:
-    now = datetime.now(timezone.utc)
-    recent_start = now - timedelta(days=30)
-    baseline_start = now - timedelta(days=90)
-    recent_query = db.query(Job).filter(Job.created_at >= recent_start)
-    if location:
-        recent_query = recent_query.filter(Job.city.ilike(location.strip()))
-    recent = recent_query.all()
-    baseline = db.query(Job).filter(Job.created_at >= baseline_start).count()
-    counts = Counter(((job.required_skill or job.work_description or "Uncategorized").strip(), job.city or "Unknown") for job in recent)
-    if not counts:
-        return []
-    daily_factor = days / 30
-    confidence = "high" if baseline >= 10 else "medium" if baseline >= 3 else "low"
-    return [
-        {"skill": skill, "location": city, "forecast_period_days": days,
-         "predicted_jobs": max(1, round(count * daily_factor)), "recent_jobs_30d": count,
-         "confidence": confidence, "method": "30-day moving average of posted jobs"}
-        for (skill, city), count in counts.most_common(12)
-    ]
+    pairs = db.query(Job.required_skill, Job.work_description, Job.city).all()
+    unique_pairs = {
+        ((skill or description or "Uncategorized").strip(), (city or "Unknown").strip())
+        for skill, description, city in pairs
+    }
+    rows = []
+    for skill, city in sorted(unique_pairs):
+        if location and city.lower() != location.strip().lower():
+            continue
+        result = forecast_demand(db, city, skill, days)
+        if result["status"] != "ok":
+            continue
+        recent_start = datetime.now(timezone.utc) - timedelta(days=30)
+        recent_jobs = db.query(Job).filter(
+            Job.created_at >= recent_start,
+            Job.city == city,
+            or_(Job.required_skill == skill, Job.work_description == skill),
+        ).count()
+        history_days = result["history_days"]
+        confidence = "high" if history_days >= 90 else "medium" if history_days >= 30 else "low"
+        rows.append({
+            "skill": skill,
+            "location": city,
+            "forecast_period_days": days,
+            "predicted_jobs": sum(point["predicted_demand"] for point in result["forecast"]),
+            "recent_jobs_30d": recent_jobs,
+            "confidence": confidence,
+            "method": "Prophet historical demand forecast",
+        })
+    return rows[:12]
 
 
 @router.get("/overview")
@@ -60,7 +74,7 @@ def overview(db: Session = Depends(get_db), _: User = Depends(_admin)):
     revenue = sum((job.platform_commission_paise or 0) for job in jobs) / 100
     return {
         "members": len(workers),
-        "verified_workers": sum(1 for worker in workers if worker.email_verified and worker.phone_verified),
+        "verified_workers": sum(1 for worker in workers if worker.provider_verification_status == "VERIFIED"),
         "active_jobs": sum(1 for job in jobs if job.status in active_statuses),
         "cooperative_revenue": revenue,
         "jobs_total": len(jobs),
@@ -72,7 +86,7 @@ def overview(db: Session = Depends(get_db), _: User = Depends(_admin)):
 def members(db: Session = Depends(get_db), _: User = Depends(_admin)):
     return [{
         "id": worker.id, "name": worker.full_name, "email": worker.email, "city": worker.city,
-        "skills": _skills(worker), "verified": bool(worker.email_verified and worker.phone_verified),
+        "skills": _skills(worker), "verified": worker.provider_verification_status == "VERIFIED",
         "created_at": worker.created_at,
     } for worker in _worker_query(db).order_by(User.created_at.desc()).all()]
 
@@ -86,17 +100,19 @@ def demand_forecast(days: int = 7, location: str | None = None, db: Session = De
 
 @router.get("/workforce")
 def workforce(db: Session = Depends(get_db), _: User = Depends(_admin)):
-    workers = _worker_query(db).all()
-    assigned = {job.allotted_labor_id for job in db.query(Job).filter(Job.allotted_labor_id.isnot(None), Job.status.notin_(["payment_completed", "payout_released"])).all()}
     gaps = []
     for item in _forecast(db, 7):
-        key = item["skill"].lower().replace(" ", "_")
-        qualified = [worker for worker in workers if key in _skills(worker) or key in (worker.labor_category.value if worker.labor_category else "")]
-        available = sum(1 for worker in qualified if worker.id not in assigned)
-        required = item["predicted_jobs"]
-        gaps.append({**item, "qualified_workers": len(qualified), "available_workers": available,
-                     "gap": max(0, required - available), "recommendation":
-                     f"Allocate {max(0, required - available)} additional qualified workers" if required > available else "Capacity currently covers forecast"})
+        allocation = build_workforce_allocation(db, item["location"], item["skill"], item["predicted_jobs"])
+        gaps.append({
+            **item,
+            "qualified_workers": allocation["eligible_workers"],
+            "available_workers": allocation["recommended_worker_count"],
+            "gap": allocation["shortage"],
+            "recommendation": (
+                f"Allocate {allocation['shortage']} additional qualified workers"
+                if allocation["shortage"] else "Capacity currently covers forecast"
+            ),
+        })
     return {"workforce": gaps}
 
 

@@ -21,6 +21,12 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 def register(payload: UserRegister, db: Session = Depends(get_db)):
     """Register a new employer or labor user."""
 
+    if payload.role == UserRole.COOPERATIVE.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cooperative accounts must be created by an authorized administrator",
+        )
+
     # Check for existing email
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(
