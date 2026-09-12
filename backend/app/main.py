@@ -35,9 +35,10 @@ from app.models.password_reset import PasswordReset
 from app.models.payment import Payment
 from app.models.organization import Federation, Society, CooperativeMembership
 from app.models.feature import WorkerAvailability, Certification, WelfareRecord, InsurancePolicy, Invoice, Notification, EmergencyRequest
+from app.models.voice_onboarding import VoiceOnboarding
 
 # Import routers
-from app.routers import auth, jobs, applications, reviews, favorites, payments, websocket, calls, messages, private_requests, password_reset, cooperative, organizations, features, forecasting
+from app.routers import auth, jobs, applications, reviews, favorites, payments, websocket, calls, messages, private_requests, password_reset, cooperative, organizations, features, forecasting, voice_onboarding
 
 # ─── Create tables ──────────────────────────────────────
 try:
@@ -57,8 +58,6 @@ app = FastAPI(
 )
 
 # ─── CORS Middleware ────────────────────────────────────
-# In a real production app, you'd want to restrict origins,
-# but for testing and Vercel preview URLs, we allow all for now.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -75,7 +74,6 @@ app.include_router(applications.router)
 app.include_router(reviews.router)
 app.include_router(favorites.router)
 app.include_router(payments.router)
-
 app.include_router(websocket.router)
 app.include_router(calls.router)
 app.include_router(messages.router)
@@ -84,18 +82,11 @@ app.include_router(cooperative.router)
 app.include_router(organizations.router)
 app.include_router(features.router)
 app.include_router(forecasting.router)
+app.include_router(voice_onboarding.router)
 
-
-# ─── Health Check ───────────────────────────────────────
 @app.get("/")
 def root():
-    return {
-        "name": APP_NAME,
-        "version": APP_VERSION,
-        "status": "running",
-        "docs": "/docs",
-    }
-
+    return {"name": APP_NAME, "version": APP_VERSION, "status": "running", "docs": "/docs"}
 
 @app.get("/health")
 def health():
